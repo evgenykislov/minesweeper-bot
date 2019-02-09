@@ -30,3 +30,4 @@
 *.exe
 *.out
 *.app
+solvers/tetragonal_neural/.ipynb_checkpoints
