@@ -1,20 +1,11 @@
 # Author: Evgeny Kislov
 
-import pixiedust
-
 import tensorflow as tf
 import numpy as np
 
 margin_size = 4
 
-# signs = [' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8']
-
-print(l)
-
-marg = 7
-print(121)
-
-print(l)
+signs = [' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8']
 
 
 def ReadField(file_name):
@@ -61,33 +52,21 @@ def FormInputData(field, cell_row, cell_col, features, labels):
     for row in range(cell_row - margin_size, cell_row + margin_size + 1):
         for col in range(cell_col - margin_size, cell_col + margin_size + 1):
             symbol = ' '
-            if cell_row >= 0 and cell_row < len(field) and cell_col >= 0 and cell_cal < len(field[0]):
+            if cell_row >= 0 and cell_row < len(field) and cell_col >= 0 and cell_col < len(field[0]):
                 symbol = field[cell_row][cell_col]
             col_name = GetColumnName(cell_row - row, cell_col - col)
             if row == cell_row and col == cell_col:
                 continue
             features[col_name].append(symbol)
     # get label
-    result = ' '
+    result = 0
     if field[cell_row][cell_col] == '*':
-        result = '*'
-    # TODO sometimes it should be '?'
+        result = 1
+    # TODO sometimes it should be '?/2'
     labels.append(result)
 
 
-k = 3
-
-print(8)
-print(k)
-
-print(5)
-
-% % pixie_debugger
-
-return
-cols = CreateColumns()
-print(cols)
-solver = tf.estimator.DNNClassifier(feature_columns=CreateColumns, hidden_units=[1000, 100], n_classes=3)
+solver = tf.estimator.DNNClassifier(feature_columns=CreateColumns(), hidden_units=[1000, 100], n_classes=3)
 
 
 def solver_input_data(file_name):
@@ -105,4 +84,4 @@ def solver_input_data(file_name):
     return features, labels
 
 
-solver.train(input_fn=lambda: solver_input_data("f.txt"), steps=100)
+solver.train(input_fn=lambda: solver_input_data("f.txt"), steps=10)
