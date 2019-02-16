@@ -66,7 +66,7 @@ def FormInputData(field, cell_row, cell_col, features, labels):
     labels.append(result)
 
 
-solver = tf.estimator.DNNClassifier(feature_columns=CreateColumns(), hidden_units=[1000, 100], n_classes=3)
+solver = tf.estimator.DNNClassifier(feature_columns=CreateColumns(), hidden_units=[1000, 100], n_classes=3, model_dir="data/minesweeper-bot")
 
 
 def solver_input_data(file_name):
