@@ -1,37 +1,82 @@
 # Author: Evgeny Kislov
 
 import copy
+import random
 import socket
 
 # Mines field
 class MineField:
     def __init__(self, field_file_name: str) -> None:
-        self.map_ = self.ReadField(field_file_name)
-        self.step_ = 0
-        self.max_steps_ = 0
-        self.row_ = len(self.map_)
-        self.col_ = len(self.map_[0])
-        self.field_ = copy.deepcopy(self.map_)
-        for row_index in range(self.row_):
-            for col_index in range(self.col_):
-                if self.field_[row_index][col_index] != ' ':
-                    self.field_[row_index][col_index] = '.'
+        random.seed()
+        self.__unknown_probability_ = 0.1
+        self.__map_ = self.__ReadField(field_file_name)
+        self.Reset()
+
+
+    def Reset(self) -> None:
+        self.__step_ = 0
+        self.__max_steps_ = 0
+        self.__row_amount_ = len(self.__map_)
+        self.__col_amount_ = len(self.__map_[0])
+        self.__field_ = []
+        self.__hide_cells_amount_ = 0
+        self.__mines_amount_ = 0
+        for row_index in range(self.__row_amount_):
+            self.__field_.append([])
+            for col_index in range(self.__col_amount_):
+                cell = ' '
+                if self.__map_[row_index][col_index] == '*':
+                    self.__mines_amount_ += 1
+                if self.__map_[row_index][col_index] != ' ':
+                    cell = '.'
+                    self.__hide_cells_amount_ += 1
+                self.__field_[row_index].append(cell)
+        self.__training_ = copy.deepcopy(self.__field_)
+
 
     def Completed(self) -> bool:
-        raise NotImplementedError
-        pass
+        return self.__hide_cells_amount_ == self.__mines_amount_
+
 
     def GetField(self) -> [[str]]:
-        raise NotImplementedError
-        pass
+        return self.__field_
+
+
+    def MakeStep(self, row, col) -> bool:
+        cell = self.__map_[row][col]
+        self.__field_[row][col] = cell
+        self.__training_[row][col] = cell
+        if cell == '*':
+            return False
+        return True
+
+
+    def GetTrainingForecast(self, row, col) -> int:
+        # Return training data for cell: 0 - explicitly clear cell, 1 - mine, 2 - can be clear or mine
+        original_cell = self.__map_[row][col]
+        training_cell = self.__training_[row][col]
+        # check another variant
+        probe = '*'
+        if original_cell == '*':
+            probe = ' '
+        self.__training_[row][col] = probe
+        alternate_valid = self.__ValidateTraining()
+        self.__training_[row][col] = training_cell
+        if alternate_valid and (random.random() < self.__unknown_probability_):
+            return 2
+        # without altenatives
+        if original_cell == '*':
+            return 1
+        return 0
+
 
     def Display(self):
-        print("Поле ", self.row_, "x", self.col_, ", Шаг ", self.step_, " (Макс ", self.max_steps_, ")", sep='')
-        for row in range(self.row_):
-            print("".join(self.field_[row]))
-        print("---")
+        print("Поле ", self.__row_amount_, "x", self.__col_amount_, ", Шаг ", self.__step_, " (Макс ", self.__max_steps_, ")", sep='')
+        for row in range(self.__row_amount_):
+            print("".join(self.__field_[row]))
+        print("")
 
-    def ReadField(self, file_name):
+    def __ReadField(self, file_name):
         field = []
         with open(file_name, 'r') as f:
             for line in f:
@@ -53,47 +98,74 @@ class MineField:
                 raise ValueError("Not aligned data")
         return field
 
+    def __ValidateTraining(self) -> bool:
+        for row in range(self.__row_amount_):
+            for col in range(self.__col_amount_):
+                # Validate the cell
+                if not self.__ValidateTrainingCell(row, col):
+                    return False
+        return True
+
+
+    def __ValidateTrainingCell(self, row, col) -> bool:
+        cell = self.__training_[row][col]
+        if cell == ' ' or cell == '.' or cell == '*':
+            # These cells are always valid :)1
+
+            return True
+        mines_amount = 0
+        unknown_amount = 0
+        for sub_row in range(row - 1, row + 2):
+            for sub_col in range(col - 1, col + 2):
+                if sub_row == row and sub_col == col:
+                    continue
+                if sub_row < 0 or sub_row >= self.__row_amount_ or sub_col < 0 or sub_col >= self.__col_amount_:
+                    # out from field
+                    continue
+                cell = self.__training_[sub_row][sub_col]
+                if cell == '*':
+                    mines_amount += 1
+                if cell == '.':
+                    unknown_amount += 1
+        target = int(self.__training_[row][col])
+        return (target >= mines_amount) and (target <= (mines_amount + unknown_amount))
+
 
 # Proxy for external solver
 class Sweeper:
-    def __init__(self, port: int) -> None:
-        self.socket = socket.socket()
-        self.socket.connect(('localhost', port))
+    def __init__(self) -> None:
+        pass
+
+    def GetStep(self, field) -> int:
+        print("Ход:")
+        row = int(input("ряд:")) - 1
+        col = int(input("колонка:")) - 1
+        return row, col
 
 
-# Description of sweeper step
-class Step:
-    def IsUnknown(self) -> bool:
-        return True
-
-    def ShouldOpen(self) -> bool:
-        return False
-
-    def MarkMine(self) -> bool:
-        return True
 
 # main() - Base logic of gaming
 field = MineField("f.txt")
-field.Display()
-sweeper = Sweeper(5000)
+sweeper = Sweeper()
 while not field.Completed():
+    field.Display()
     view = field.GetField()
-    step = sweeper.GetStepForField(view)
-    if step.IsUnknown():
-        if field.HasOpenedCells():
-            # There were opened cells from last clearing
-            field.ClearBombMarks()
-        else:
-            field.OpenRandom()
-            opened_cells = True
-    if field.MarkBomb():
-        field.MarkBomb(step)
-    if step.OpenCell():
-        field.OpenCell(step)
-        opened_cells = True
-    if field.Bombed():
-        break
-if field.Bombed():
-    print("Boom-boom")
-else:
-    print("!!! Congratulation !!!")
+    row, col = sweeper.GetStep(view)
+    # Generate forecast
+    forecast = field.GetTrainingForecast(row, col)
+    if forecast == 0:
+        print("Прогноз: чисто")
+    if forecast == 1:
+        print("Прогноз: мина")
+    if forecast == 2:
+        print("Прогноз: ?")
+    # step
+    result = field.MakeStep(row, col)
+    if not result:
+        print("Бум-Бум")
+        print("***************")
+        field.Reset()
+
+
+
+
