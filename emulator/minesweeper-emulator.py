@@ -2,7 +2,8 @@
 
 import copy
 import random
-import socket
+import miner_dnn
+
 
 # Mines field
 class MineField:
@@ -11,11 +12,11 @@ class MineField:
         self.__unknown_probability_ = 0.1
         self.__map_ = self.__ReadField(field_file_name)
         self.Reset()
+        self.__max_steps_ = 0
 
 
     def Reset(self) -> None:
         self.__step_ = 0
-        self.__max_steps_ = 0
         self.__row_amount_ = len(self.__map_)
         self.__col_amount_ = len(self.__map_[0])
         self.__field_ = []
@@ -43,6 +44,9 @@ class MineField:
 
 
     def MakeStep(self, row, col) -> bool:
+        self.__step_ += 1
+        if self.__step_ > self.__max_steps_:
+            self.__max_steps_ = self.__step_
         cell = self.__map_[row][col]
         self.__field_[row][col] = cell
         self.__training_[row][col] = cell
@@ -146,11 +150,12 @@ class Sweeper:
 
 # main() - Base logic of gaming
 field = MineField("f.txt")
-sweeper = Sweeper()
+sweeper = miner_dnn.TensorFlowSweeper()
 while not field.Completed():
     field.Display()
     view = field.GetField()
     row, col = sweeper.GetStep(view)
+    print("Шаг: ", row + 1, "x", col + 1, sep='')
     # Generate forecast
     forecast = field.GetTrainingForecast(row, col)
     if forecast == 0:
@@ -158,13 +163,17 @@ while not field.Completed():
     if forecast == 1:
         print("Прогноз: мина")
     if forecast == 2:
-        print("Прогноз: ?")
+        print("Прогноз: 50/50")
     # step
     result = field.MakeStep(row, col)
+    sweeper.Train(view, row, col, forecast)
     if not result:
+        # find mine
         print("Бум-Бум")
         print("***************")
+        # start from beginning
         field.Reset()
+
 
 
 
