@@ -6,16 +6,13 @@ import copy
 
 class TensorFlowSweeper:
     def __init__(self) -> None:
-        self.__margin_size_ = 4
-        self.__mineset_iterations_ = 3
+        self.__margin_size_ = 2
+        self.__no_probability_ = -100.0
         self.__signs_ = [' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8']
         self.__solver_ = tf.estimator.DNNClassifier(feature_columns = self.__CreateColumns(), hidden_units=[1000, 100], n_classes=3, model_dir="data/minesweeper-bot")
 
     def GetStep(self, field) -> int:
-        step = []
-        predict_field = copy.deepcopy(field)
-        for counter in range(self.__mineset_iterations_):
-            step = self.__MineIteration(predict_field)
+        step = self.__MineIteration(field)
         return step[0], step[1]
 
 
@@ -62,7 +59,7 @@ class TensorFlowSweeper:
         for row in range(row_amount):
             for col in range(col_amount):
                 cell = field[row][col]
-                if not (cell == '.' or cell == '*'):
+                if cell != '.':
                     continue
                 positions.append([row, col])
         return positions
@@ -72,7 +69,7 @@ class TensorFlowSweeper:
         features = self.__CreateEmptyFeatures()
         for pos in positions:
             cell = field[pos[0]][pos[1]]
-            if not (cell == '.' or cell == '*'):
+            if cell != '.':
                 continue
             self.__AddDnnData(field, pos[0], pos[1], features)
         return features
@@ -83,28 +80,34 @@ class TensorFlowSweeper:
         if len(positions) == 0:
             raise ValueError("Empty list of cells for prediction")
         predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions))
-        first_clear_cell = []
-        first_unknown_cell = []
+        clear_cell = []
+        clear_probability = self.__no_probability_
+        unknown_cell = []
+        unknown_probability = self.__no_probability_
         row = 0
         for forecast in predict:
             if row >= len(positions):
                 break
             forecast_value = forecast['class_ids'][0]
-            if forecast_value == 0 and len(first_clear_cell) == 0:
+            clear_probe = forecast["probabilities"][0]
+            unknown_probe = forecast["probabilities"][2]
+            if forecast_value == 0 and clear_probe > clear_probability:
                 # predict first clear cell
-                first_clear_cell = positions[row]
-            if forecast_value == 1:
-                # predict mine
-                field[positions[row][0]][positions[row][1]] = '*'
-            if forecast_value == 2 and len(first_unknown_cell) == 0:
+                clear_cell = positions[row]
+                clear_probability = clear_probe
+            # if forecast_value == 1:
+                # predict mine. Nothing doing
+                # field[positions[row][0]][positions[row][1]] = '*'
+            if forecast_value == 2 and unknown_probe > unknown_probability:
                 # predict unknown
-                first_unknown_cell = positions[row]
+                unknown_cell = positions[row]
+                unknown_probability = unknown_probe
             row += 1
-        if len(first_clear_cell) == 0:
-            if len(first_unknown_cell) == 0:
+        if len(clear_cell) == 0:
+            if len(unknown_cell) == 0:
                 return positions[0]
-            return first_unknown_cell
-        return first_clear_cell
+            return unknown_cell
+        return clear_cell
 
 
     def __AddDnnData(self, field, target_row, target_col, features):

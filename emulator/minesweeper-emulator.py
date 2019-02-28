@@ -13,6 +13,7 @@ class MineField:
         self.__map_ = self.__ReadField(field_file_name)
         self.Reset()
         self.__max_steps_ = 0
+        self.__max_field_ = copy.deepcopy(self.__field_)
 
 
     def Reset(self) -> None:
@@ -44,12 +45,13 @@ class MineField:
 
 
     def MakeStep(self, row, col) -> bool:
-        self.__step_ += 1
-        if self.__step_ > self.__max_steps_:
-            self.__max_steps_ = self.__step_
         cell = self.__map_[row][col]
         self.__field_[row][col] = cell
         self.__training_[row][col] = cell
+        self.__step_ += 1
+        if self.__step_ > self.__max_steps_:
+            self.__max_steps_ = self.__step_
+            self.__max_field_ = copy.deepcopy(self.__field_)
         if cell == '*':
             return False
         return True
@@ -75,10 +77,23 @@ class MineField:
 
 
     def Display(self):
-        print("Поле ", self.__row_amount_, "x", self.__col_amount_, ", Шаг ", self.__step_, " (Макс ", self.__max_steps_, ")", sep='')
+        print("Field: ", self.__row_amount_, "x", self.__col_amount_, ", Turn: ", self.__step_, ", Max turns: ", self.__max_steps_, sep='')
         for row in range(self.__row_amount_):
             print("".join(self.__field_[row]))
         print("")
+
+
+    def DisplayCurrentAndMax(self):
+        title = "Turn: " + str(self.__step_)
+        space_amount = self.__col_amount_ + 5 - len(title)
+        for counter in range(space_amount):
+            title += ' '
+        title += "Best turn: " + str(self.__max_steps_)
+        print(title)
+        for row in range(self.__row_amount_):
+            print("".join(self.__field_[row]), "  |  ", "".join(self.__max_field_[row]), sep='')
+        print("")
+
 
     def __ReadField(self, file_name):
         field = []
@@ -115,7 +130,6 @@ class MineField:
         cell = self.__training_[row][col]
         if cell == ' ' or cell == '.' or cell == '*':
             # These cells are always valid :)1
-
             return True
         mines_amount = 0
         unknown_amount = 0
@@ -141,9 +155,9 @@ class Sweeper:
         pass
 
     def GetStep(self, field) -> int:
-        print("Ход:")
-        row = int(input("ряд:")) - 1
-        col = int(input("колонка:")) - 1
+        print("Step:")
+        row = int(input("row:")) - 1
+        col = int(input("column:")) - 1
         return row, col
 
 
@@ -152,29 +166,27 @@ class Sweeper:
 field = MineField("f.txt")
 sweeper = miner_dnn.TensorFlowSweeper()
 while not field.Completed():
-    field.Display()
     view = field.GetField()
     row, col = sweeper.GetStep(view)
-    print("Шаг: ", row + 1, "x", col + 1, sep='')
     # Generate forecast
     forecast = field.GetTrainingForecast(row, col)
+    sweeper.Train(view, row, col, forecast)
+    forecast_str = ""
     if forecast == 0:
-        print("Прогноз: чисто")
+        forecast_str = "Clear"
     if forecast == 1:
-        print("Прогноз: мина")
+        forecast_str = "Mine"
     if forecast == 2:
-        print("Прогноз: 50/50")
+        forecast_str = "Unknown 50/50"
+    print("Sweeper step: ", row + 1, "x", col + 1, ". Training forecast: ", forecast_str, sep='')
     # step
     result = field.MakeStep(row, col)
-    sweeper.Train(view, row, col, forecast)
     if not result:
-        # find mine
-        print("Бум-Бум")
+        # mine is found
+        print("Boom")
         print("***************")
+        field.DisplayCurrentAndMax()
         # start from beginning
         field.Reset()
-
-
-
-
-
+    else:
+        field.DisplayCurrentAndMax()
