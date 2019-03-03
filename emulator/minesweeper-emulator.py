@@ -10,29 +10,37 @@ class MineField:
     def __init__(self, field_file_name: str) -> None:
         random.seed()
         self.__unknown_probability_ = 0.1
+        self.__death_amount_ = 0
         self.__map_ = self.__ReadField(field_file_name)
-        self.Reset()
+        self.__row_amount_ = len(self.__map_)
+        self.__col_amount_ = len(self.__map_[0])
+        self.__mines_amount_ = 0
+        for row_index in range(self.__row_amount_):
+            for col_index in range(self.__col_amount_):
+                if self.__map_[row_index][col_index] == '*':
+                    self.__mines_amount_ += 1
+        self.__milestone_interval_ = 20
+        self.__milestone_step_ = 0
+        # Generate empty field (initial milestone)
+        self.__milestone_field_ = []
+        self.__milestone_hide_cells_amount_ = 0
+        for row_index in range(self.__row_amount_):
+            self.__milestone_field_.append([])
+            for col_index in range(self.__col_amount_):
+                cell = ' '
+                if self.__map_[row_index][col_index] != ' ':
+                    cell = '.'
+                    self.__milestone_hide_cells_amount_ += 1
+                self.__milestone_field_[row_index].append(cell)
         self.__max_steps_ = 0
-        self.__max_field_ = copy.deepcopy(self.__field_)
+        self.__max_field_ = copy.deepcopy(self.__milestone_field_)
+        self.Reset()
 
 
     def Reset(self) -> None:
-        self.__step_ = 0
-        self.__row_amount_ = len(self.__map_)
-        self.__col_amount_ = len(self.__map_[0])
-        self.__field_ = []
-        self.__hide_cells_amount_ = 0
-        self.__mines_amount_ = 0
-        for row_index in range(self.__row_amount_):
-            self.__field_.append([])
-            for col_index in range(self.__col_amount_):
-                cell = ' '
-                if self.__map_[row_index][col_index] == '*':
-                    self.__mines_amount_ += 1
-                if self.__map_[row_index][col_index] != ' ':
-                    cell = '.'
-                    self.__hide_cells_amount_ += 1
-                self.__field_[row_index].append(cell)
+        self.__step_ = self.__milestone_step_
+        self.__field_ = copy.deepcopy(self.__milestone_field_)
+        self.__hide_cells_amount_ = self.__milestone_hide_cells_amount_
         self.__training_ = copy.deepcopy(self.__field_)
 
 
@@ -49,11 +57,17 @@ class MineField:
         self.__field_[row][col] = cell
         self.__training_[row][col] = cell
         self.__step_ += 1
+        self.__hide_cells_amount_ -= 1
+        if cell == '*':
+            self.__death_amount_ += 1
+            return False
         if self.__step_ > self.__max_steps_:
             self.__max_steps_ = self.__step_
             self.__max_field_ = copy.deepcopy(self.__field_)
-        if cell == '*':
-            return False
+        if self.__step_ >= self.__milestone_step_ + self.__milestone_interval_:
+            self.__milestone_field_ = copy.deepcopy(self.__field_)
+            self.__milestone_hide_cells_amount_ = self.__hide_cells_amount_
+            self.__milestone_step_ = self.__step_
         return True
 
 
@@ -79,20 +93,21 @@ class MineField:
     def Display(self):
         print("Field: ", self.__row_amount_, "x", self.__col_amount_, ", Turn: ", self.__step_, ", Max turns: ", self.__max_steps_, sep='')
         for row in range(self.__row_amount_):
-            print("".join(self.__field_[row]))
+            print(" ".join(self.__field_[row]))
         print("")
 
 
     def DisplayCurrentAndMax(self):
         title = "Turn: " + str(self.__step_)
-        space_amount = self.__col_amount_ + 5 - len(title)
+        space_amount = self.__col_amount_ * 2 - 1 + 5 - len(title)
         for counter in range(space_amount):
             title += ' '
         title += "Best turn: " + str(self.__max_steps_)
         print(title)
         for row in range(self.__row_amount_):
-            print("".join(self.__field_[row]), "  |  ", "".join(self.__max_field_[row]), sep='')
+            print(" ".join(self.__field_[row]), "  |  ", " ".join(self.__max_field_[row]), sep='')
         print("")
+        print("Death amount: ", self.__death_amount_, sep='')
 
 
     def __ReadField(self, file_name):

@@ -6,10 +6,10 @@ import copy
 
 class TensorFlowSweeper:
     def __init__(self) -> None:
-        self.__margin_size_ = 2
+        self.__margin_size_ = 4
         self.__no_probability_ = -100.0
         self.__signs_ = [' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8']
-        self.__solver_ = tf.estimator.DNNClassifier(feature_columns = self.__CreateColumns(), hidden_units=[1000, 100], n_classes=3, model_dir="data/minesweeper-bot")
+        self.__solver_ = tf.estimator.DNNClassifier(feature_columns = self.__CreateColumns(), hidden_units=[960, 140, 21], n_classes=3, model_dir="data/minesweeper-bot")
 
     def GetStep(self, field) -> int:
         step = self.__MineIteration(field)
