@@ -1,87 +1,135 @@
 # Author: Evgeny Kislov
 
 import tensorflow as tf
-import numpy as np
-
-margin_size = 4
-
-signs = [' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8']
+import copy
 
 
-def ReadField(file_name):
-    field = []
-    with open(file_name, 'r') as f:
-        for line in f:
-            char_line = list(line)
-            if len(char_line) > 0:
-                if char_line[-1] == '\n':
-                    del char_line[-1]
-            if len(char_line) == 0:
+class TensorFlowSweeper:
+    def __init__(self) -> None:
+        self.__margin_size_ = 4
+        self.__no_probability_ = -100.0
+        self.__signs_ = [' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8']
+        self.__solver_ = tf.estimator.DNNClassifier(feature_columns = self.__CreateColumns(), hidden_units=[960, 140, 21], n_classes=3, model_dir="data/minesweeper-bot")
+
+    def GetStep(self, field) -> int:
+        step = self.__MineIteration(field)
+        return step[0], step[1]
+
+
+    def Train(self, field, row, col, forecast):
+        self.__solver_.train(input_fn = lambda: self.__SolverInputData(field, row, col, forecast), steps=1)
+        pass
+
+    def __GetColumnName(self, row, col):
+        return "C" + str(row) + "." + str(col)
+
+
+    def __CreateColumns(self):
+        columns = []
+        for row in range(-self.__margin_size_, self.__margin_size_ + 1):
+            for col in range(-self.__margin_size_, self.__margin_size_ + 1):
+                if row == 0 and col == 0:
+                    continue
+                sign_column = tf.feature_column.categorical_column_with_vocabulary_list(self.__GetColumnName(row, col), vocabulary_list = self.__signs_)
+                sign_indicator_column = tf.feature_column.indicator_column(sign_column)
+                columns.append(sign_indicator_column)
+        return columns
+
+    def __SolverInputData(self, field, target_row, target_col, forecast):
+        row_amount = len(field)
+        col_amount = len(field[0])
+        features = {}
+        for row in range(target_row - self.__margin_size_, target_row + self.__margin_size_ + 1):
+            for col in range(target_col - self.__margin_size_, target_col + self.__margin_size_ + 1):
+                if row == target_row and col == target_col:
+                    continue
+                symbol = ' '
+                if row >= 0 and row < row_amount and col >= 0 and col < col_amount:
+                    symbol = field[row][col]
+                col_name = self.__GetColumnName(row - target_row, col - target_col)
+                features[col_name] = [symbol]
+        labels = [forecast]
+        return features, labels
+
+
+    def __GetPredictPositions(self, field):
+        row_amount = len(field)
+        col_amount = len(field[0])
+        positions = []
+        for row in range(row_amount):
+            for col in range(col_amount):
+                cell = field[row][col]
+                if cell != '.':
+                    continue
+                positions.append([row, col])
+        return positions
+
+
+    def __PredictInputData(self, field, positions):
+        features = self.__CreateEmptyFeatures()
+        for pos in positions:
+            cell = field[pos[0]][pos[1]]
+            if cell != '.':
                 continue
-            field.append(char_line)
-    # check read field
-    if len(field) == 0:
-        raise Exception("Empty file")
-    first_len = len(field[0])
-    if first_len == 0:
-        raise Exception("Narrow columns")
-    for row in range(len(field)):
-        if len(field[row]) != first_len:
-            raise Exception("Not aligned data")
-    return field
+            self.__AddDnnData(field, pos[0], pos[1], features)
+        return features
 
 
-def GetColumnName(row, col):
-    return "C" + str(row) + "." + str(col)
+    def __MineIteration(self, field):
+        positions = self.__GetPredictPositions(field)
+        if len(positions) == 0:
+            raise ValueError("Empty list of cells for prediction")
+        predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions))
+        clear_cell = []
+        clear_probability = self.__no_probability_
+        unknown_cell = []
+        unknown_probability = self.__no_probability_
+        row = 0
+        for forecast in predict:
+            if row >= len(positions):
+                break
+            forecast_value = forecast['class_ids'][0]
+            clear_probe = forecast["probabilities"][0]
+            unknown_probe = forecast["probabilities"][2]
+            if forecast_value == 0 and clear_probe > clear_probability:
+                # predict first clear cell
+                clear_cell = positions[row]
+                clear_probability = clear_probe
+            # if forecast_value == 1:
+                # predict mine. Nothing doing
+                # field[positions[row][0]][positions[row][1]] = '*'
+            if forecast_value == 2 and unknown_probe > unknown_probability:
+                # predict unknown
+                unknown_cell = positions[row]
+                unknown_probability = unknown_probe
+            row += 1
+        if len(clear_cell) == 0:
+            if len(unknown_cell) == 0:
+                return positions[0]
+            return unknown_cell
+        return clear_cell
 
 
-def CreateColumns():
-    columns = []
-    for row in range(-margin_size, margin_size + 1):
-        for col in range(-margin_size, margin_size + 1):
-            if row == 0 and col == 0:
-                continue
-            sign_column = tf.feature_column.categorical_column_with_vocabulary_list(GetColumnName(row, col),
-                                                                                    vocabulary_list=signs)
-            sign_indicator_column = tf.feature_column.indicator_column(sign_column)
-            columns.append(sign_indicator_column)
-    return columns
+    def __AddDnnData(self, field, target_row, target_col, features):
+        row_amount = len(field)
+        col_amount = len(field[0])
+        for row in range(target_row - self.__margin_size_, target_row + self.__margin_size_ + 1):
+            for col in range(target_col - self.__margin_size_, target_col + self.__margin_size_ + 1):
+                if row == target_row and col == target_col:
+                    continue
+                symbol = ' '
+                if row >= 0 and row < row_amount and col >= 0 and col < col_amount:
+                    symbol = field[row][col]
+                col_name = self.__GetColumnName(row - target_row, col - target_col)
+                features[col_name].append(symbol)
 
+    def __CreateEmptyFeatures(self):
+        features = {}
+        for row in range(-self.__margin_size_, self.__margin_size_ + 1):
+            for col in range(-self.__margin_size_, self.__margin_size_ + 1):
+                if row == 0 and col == 0:
+                    continue
+                col_name = self.__GetColumnName(row, col)
+                features[col_name] = []
+        return features
 
-def FormInputData(field, cell_row, cell_col, features, labels):
-    for row in range(cell_row - margin_size, cell_row + margin_size + 1):
-        for col in range(cell_col - margin_size, cell_col + margin_size + 1):
-            symbol = ' '
-            if cell_row >= 0 and cell_row < len(field) and cell_col >= 0 and cell_col < len(field[0]):
-                symbol = field[cell_row][cell_col]
-            col_name = GetColumnName(cell_row - row, cell_col - col)
-            if row == cell_row and col == cell_col:
-                continue
-            features[col_name].append(symbol)
-    # get label
-    result = 0
-    if field[cell_row][cell_col] == '*':
-        result = 1
-    # TODO sometimes it should be '?/2'
-    labels.append(result)
-
-
-solver = tf.estimator.DNNClassifier(feature_columns=CreateColumns(), hidden_units=[1000, 100], n_classes=3, model_dir="data/minesweeper-bot")
-
-
-def solver_input_data(file_name):
-    field = ReadField(file_name)
-    row_amount = len(field)
-    col_amount = len(field[0])
-    features = {}
-    for row in range(-margin_size, margin_size + 1):
-        for col in range(-margin_size, margin_size + 1):
-            features[GetColumnName(row, col)] = []
-    labels = []
-    for cell_row in range(row_amount):
-        for cell_col in range(col_amount):
-            FormInputData(field, cell_row, cell_col, features, labels)
-    return features, labels
-
-
-solver.train(input_fn=lambda: solver_input_data("f.txt"), steps=10)
