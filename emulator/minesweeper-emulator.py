@@ -7,6 +7,14 @@ import miner_dnn
 
 # Mines field
 class MineField:
+    # __map_ - loaded full-opened field
+    # __milestone_field_ - partially opened field for last milestone (f.e. each 5-th step).
+    #       used as start point in case of fault
+    # __filed_ - current opened field, used for calculation, etc
+    # __max_filed_ - maximum opened field in that running (for showing only)
+    # __training_field_ - copy of __field_, used for detection unknown state (50/50)
+
+
     def __init__(self, field_file_name: str) -> None:
         random.seed()
         self.__unknown_probability_ = 0.1
@@ -71,24 +79,32 @@ class MineField:
         return True
 
 
-    def GetTrainingForecast(self, row, col) -> str:
-        # Return training data for cell
-        original_cell = self.__map_[row][col]
-        training_cell = self.__training_[row][col]
-        # check another variant
-        probe = '*'
-        if original_cell == '*':
-            probe = ' '
-        self.__training_[row][col] = probe
-        alternate_valid = self.__ValidateTraining()
-        self.__training_[row][col] = training_cell
-        if alternate_valid and (random.random() < self.__unknown_probability_):
-            return '?'
-        # without altenatives
-        if original_cell == '*':
-            return '*'
-        return 'c'
-
+    def GetTrainingForecast(self) -> str:
+        # Return training data for field
+        # Return: list of [row, col, predict]
+        training = []
+        for row in range(self.__row_amount_):
+            for col in range(self.__col_amount_):
+                if self.__field_[row][col] != '.':
+                    continue
+                # process closed cells only
+                original_cell = self.__map_[row][col]
+                if original_cell == '*':
+                    training.append([row, col, '*'])
+                else:
+                    training.append([row, col, 'c'])
+                # check alternate variant
+                training_cell = self.__training_[row][col]
+                # check another variant
+                probe = '*'
+                if original_cell == '*':
+                    probe = ' '
+                self.__training_[row][col] = probe
+                alternate_valid = self.__ValidateTraining()
+                self.__training_[row][col] = training_cell
+                if alternate_valid:
+                    training.append([row, col, '?'])
+        return training
 
     def Display(self):
         print("Field: ", self.__row_amount_, "x", self.__col_amount_, ", Turn: ", self.__step_, ", Max turns: ", self.__max_steps_, sep='')
@@ -108,6 +124,10 @@ class MineField:
             print(" ".join(self.__field_[row]), "  |  ", " ".join(self.__max_field_[row]), sep='')
         print("")
         print("Death amount: ", self.__death_amount_, sep='')
+
+
+    def GetDeathAmount(self):
+        return self.__death_amount_
 
 
     def __ReadField(self, file_name):
@@ -171,16 +191,9 @@ while not field.Completed():
     view = field.GetField()
     row, col = sweeper.GetStep(view)
     # Generate forecast
-    forecast = field.GetTrainingForecast(row, col)
-    sweeper.Train(view, row, col, forecast)
-    forecast_str = ""
-    if forecast == 'c':
-        forecast_str = "Clear"
-    if forecast == '*':
-        forecast_str = "Mine"
-    if forecast == '?':
-        forecast_str = "Unknown 50/50"
-    print("Sweeper step: ", row + 1, "x", col + 1, ". Training forecast: ", forecast_str, sep='')
+    training = field.GetTrainingForecast()
+    sweeper.Train(view, training)
+    print("Sweeper step: ", row + 1, "x", col + 1, sep='')
     # step
     result = field.MakeStep(row, col)
     if not result:
@@ -192,3 +205,5 @@ while not field.Completed():
         field.Reset()
     else:
         field.DisplayCurrentAndMax()
+print("----------------")
+print("Field de-mined with ", field.GetDeathAmount(), " deatch", sep='')

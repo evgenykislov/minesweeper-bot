@@ -17,8 +17,8 @@ class TensorFlowSweeper:
         return step[0], step[1]
 
 
-    def Train(self, field, row, col, forecast):
-        self.__solver_.train(input_fn = lambda: self.__SolverInputData(field, row, col, forecast), steps=1)
+    def Train(self, field, training):
+        self.__solver_.train(input_fn = lambda: self.__SolverInputData(field, training), steps=1)
         pass
 
     def __GetColumnName(self, row, col):
@@ -38,26 +38,30 @@ class TensorFlowSweeper:
                 columns.append(sign_indicator_column)
         return columns
 
-    def __SolverInputData(self, field, target_row, target_col, forecast):
+    def __SolverInputData(self, field, training):
         row_amount = len(field)
         col_amount = len(field[0])
-        features = {}
-        for row in range(target_row - self.__margin_size_, target_row + self.__margin_size_ + 1):
-            for col in range(target_col - self.__margin_size_, target_col + self.__margin_size_ + 1):
-                if row == target_row and col == target_col:
-                    continue
-                symbol = ' '
-                if row >= 0 and row < row_amount and col >= 0 and col < col_amount:
-                    symbol = field[row][col]
-                col_name = self.__GetColumnName(row - target_row, col - target_col)
-                features[col_name] = [symbol]
+        features = self.__CreateEmptyFeatures()
         labels = []
-        if forecast == 'c':
-            labels.append(0)
-        elif forecast == '*':
-            labels.append(1)
-        else:
-            labels.append(2)
+        for index in range(len(training)):
+            target_row = training[index][0]
+            target_col = training[index][1]
+            target_forecast = training[index][2]
+            for row in range(target_row - self.__margin_size_, target_row + self.__margin_size_ + 1):
+                for col in range(target_col - self.__margin_size_, target_col + self.__margin_size_ + 1):
+                    if row == target_row and col == target_col:
+                        continue
+                    symbol = ' '
+                    if row >= 0 and row < row_amount and col >= 0 and col < col_amount:
+                        symbol = field[row][col]
+                    col_name = self.__GetColumnName(row - target_row, col - target_col)
+                    features[col_name].append(symbol)
+            if target_forecast == 'c':
+                labels.append(0)
+            elif target_forecast == '*':
+                labels.append(1)
+            else:
+                labels.append(2)
         return features, labels
 
 
