@@ -19,7 +19,7 @@ class MineField:
             for col_index in range(self.__col_amount_):
                 if self.__map_[row_index][col_index] == '*':
                     self.__mines_amount_ += 1
-        self.__milestone_interval_ = 20
+        self.__milestone_interval_ = 1
         self.__milestone_step_ = 0
         # Generate empty field (initial milestone)
         self.__milestone_field_ = []
@@ -71,8 +71,8 @@ class MineField:
         return True
 
 
-    def GetTrainingForecast(self, row, col) -> int:
-        # Return training data for cell: 0 - explicitly clear cell, 1 - mine, 2 - can be clear or mine
+    def GetTrainingForecast(self, row, col) -> str:
+        # Return training data for cell
         original_cell = self.__map_[row][col]
         training_cell = self.__training_[row][col]
         # check another variant
@@ -83,11 +83,11 @@ class MineField:
         alternate_valid = self.__ValidateTraining()
         self.__training_[row][col] = training_cell
         if alternate_valid and (random.random() < self.__unknown_probability_):
-            return 2
+            return '?'
         # without altenatives
         if original_cell == '*':
-            return 1
-        return 0
+            return '*'
+        return 'c'
 
 
     def Display(self):
@@ -164,19 +164,6 @@ class MineField:
         return (target >= mines_amount) and (target <= (mines_amount + unknown_amount))
 
 
-# Proxy for external solver
-class Sweeper:
-    def __init__(self) -> None:
-        pass
-
-    def GetStep(self, field) -> int:
-        print("Step:")
-        row = int(input("row:")) - 1
-        col = int(input("column:")) - 1
-        return row, col
-
-
-
 # main() - Base logic of gaming
 field = MineField("f.txt")
 sweeper = miner_dnn.TensorFlowSweeper()
@@ -187,11 +174,11 @@ while not field.Completed():
     forecast = field.GetTrainingForecast(row, col)
     sweeper.Train(view, row, col, forecast)
     forecast_str = ""
-    if forecast == 0:
+    if forecast == 'c':
         forecast_str = "Clear"
-    if forecast == 1:
+    if forecast == '*':
         forecast_str = "Mine"
-    if forecast == 2:
+    if forecast == '?':
         forecast_str = "Unknown 50/50"
     print("Sweeper step: ", row + 1, "x", col + 1, ". Training forecast: ", forecast_str, sep='')
     # step

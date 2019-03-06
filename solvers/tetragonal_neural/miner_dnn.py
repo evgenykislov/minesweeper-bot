@@ -51,7 +51,13 @@ class TensorFlowSweeper:
                     symbol = field[row][col]
                 col_name = self.__GetColumnName(row - target_row, col - target_col)
                 features[col_name] = [symbol]
-        labels = [forecast]
+        labels = []
+        if forecast == 'c':
+            labels.append(0)
+        elif forecast == '*':
+            labels.append(1)
+        else:
+            labels.append(2)
         return features, labels
 
 
