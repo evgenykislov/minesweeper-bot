@@ -60,6 +60,11 @@ class MineField:
         return self.__field_
 
 
+    def GetFieldParams(self) -> [int]:
+        # Return: [row_amount, col_amount, mines_amount]
+        return [self.__row_amount_, self.__col_amount_, self.__mines_amount_]
+
+
     def MakeStep(self, row, col) -> bool:
         cell = self.__map_[row][col]
         self.__field_[row][col] = cell
@@ -185,25 +190,46 @@ class MineField:
 
 
 # main() - Base logic of gaming
-field = MineField("f.txt")
 sweeper = miner_dnn.TensorFlowSweeper()
-while not field.Completed():
-    view = field.GetField()
+
+answer = input("Make a training [y/n]:")
+if answer == 'y' or answer == 'Y':
+    field = MineField("f.txt")
+    while not field.Completed():
+        view = field.GetField()
+        row, col = sweeper.GetStep(view)
+        # Generate forecast
+        training = field.GetTrainingForecast()
+        sweeper.Train(view, training)
+        print("Sweeper step: ", row + 1, "x", col + 1, sep='')
+        # step
+        result = field.MakeStep(row, col)
+        if not result:
+            # mine is found
+            print("Boom")
+            print("***************")
+            field.DisplayCurrentAndMax()
+            # start from beginning
+            field.Reset()
+        else:
+            field.DisplayCurrentAndMax()
+    print("----------------")
+    print("Field de-mined with ", field.GetDeathAmount(), " death", sep='')
+# Checking of AI
+field_check = MineField("t.txt")
+check_steps = 0
+while not field_check.Completed():
+    view = field_check.GetField()
     row, col = sweeper.GetStep(view)
-    # Generate forecast
-    training = field.GetTrainingForecast()
-    sweeper.Train(view, training)
-    print("Sweeper step: ", row + 1, "x", col + 1, sep='')
-    # step
-    result = field.MakeStep(row, col)
-    if not result:
-        # mine is found
-        print("Boom")
-        print("***************")
-        field.DisplayCurrentAndMax()
-        # start from beginning
-        field.Reset()
+    result = field_check.MakeStep(row, col)
+    if result:
+        check_steps += 1
     else:
-        field.DisplayCurrentAndMax()
-print("----------------")
-print("Field de-mined with ", field.GetDeathAmount(), " deatch", sep='')
+        # mine is found
+        params = field_check.GetFieldParams()
+        maximum_available_steps = params[0] * params[1] - params[2]
+        print("Check can make ", check_steps, " steps from ", maximum_available_steps, sep='')
+        field_check.Display()
+        break
+if field_check.Completed():
+    print("Check congratulation!!!")
