@@ -3,6 +3,8 @@
 import tensorflow as tf
 import copy
 
+# hack for suppress warnings
+tf.estimator.Estimator._validate_features_in_predict_input = lambda *args: None
 
 class TensorFlowSweeper:
     def __init__(self) -> None:
@@ -111,11 +113,11 @@ class TensorFlowSweeper:
                 mine_probability = mine_probe
         if len(clear_cell) != 0:
             # debug
-            print("Clear probability: ", clear_probability, sep='')
+            # print("Clear probability: ", clear_probability, sep='')
             return clear_cell
         if len(non_mine_cell) != 0:
             # debug
-            print("Mine probability: ", mine_probability, sep='')
+            # print("Mine probability: ", mine_probability, sep='')
             return non_mine_cell
         raise ValueError("can't find cell with max clear-state or min mine-state")
 
