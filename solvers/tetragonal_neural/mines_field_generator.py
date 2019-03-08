@@ -44,20 +44,16 @@ def GenerateField(rowAmount, colAmount, minesAmount):
 # main
 print("Mines field generator")
 # input user parameters
-print("How many rows: ")
-row = int(input())
-print("How many columns: ")
-col = int(input())
-print("How many mines: ")
-mines = int(input())
-print("How many field instances: ")
-fields = int(input())
-print("Field start index: ")
-field_start_index = int(input())
+row = int(input("Rows:"))
+col = int(input("Columns:"))
+mines = int(input("Mines:"))
+fields = int(input("Field instances:"))
+field_start_index = int(input("Field start index:"))
+field_prefix = input("Field prefix:")
 
 for field_index in range(fields):
     field = GenerateField(row, col, mines)
-    file_name = "field_{row}x{col}_{index:05d}.txt".format(row = row, col = col, index = field_index + field_start_index)
+    file_name = "{prefix}_{row}x{col}_{index:05d}.txt".format(prefix = field_prefix, row = row, col = col, index = field_index + field_start_index)
     with open(file_name, 'x') as storage:
         for line in field:
             print(line, file = storage)

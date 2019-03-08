@@ -1,12 +1,21 @@
 # Author: Evgeny Kislov
 
 import copy
+import os
 import random
 import miner_dnn
 
 
 # Mines field
 class MineField:
+    # __map_ - loaded full-opened field
+    # __milestone_field_ - partially opened field for last milestone (f.e. each 5-th step).
+    #       used as start point in case of fault
+    # __filed_ - current opened field, used for calculation, etc
+    # __max_filed_ - maximum opened field in that running (for showing only)
+    # __training_field_ - copy of __field_, used for detection unknown state (50/50)
+
+
     def __init__(self, field_file_name: str) -> None:
         random.seed()
         self.__unknown_probability_ = 0.1
@@ -19,7 +28,7 @@ class MineField:
             for col_index in range(self.__col_amount_):
                 if self.__map_[row_index][col_index] == '*':
                     self.__mines_amount_ += 1
-        self.__milestone_interval_ = 20
+        self.__milestone_interval_ = 1
         self.__milestone_step_ = 0
         # Generate empty field (initial milestone)
         self.__milestone_field_ = []
@@ -52,6 +61,15 @@ class MineField:
         return self.__field_
 
 
+    def GetFieldParams(self) -> [int]:
+        # Return: [row_amount, col_amount, mines_amount]
+        return [self.__row_amount_, self.__col_amount_, self.__mines_amount_]
+
+
+    def GetCurrentStep(self) -> int:
+        return self.__step_
+
+
     def MakeStep(self, row, col) -> bool:
         cell = self.__map_[row][col]
         self.__field_[row][col] = cell
@@ -71,24 +89,32 @@ class MineField:
         return True
 
 
-    def GetTrainingForecast(self, row, col) -> int:
-        # Return training data for cell: 0 - explicitly clear cell, 1 - mine, 2 - can be clear or mine
-        original_cell = self.__map_[row][col]
-        training_cell = self.__training_[row][col]
-        # check another variant
-        probe = '*'
-        if original_cell == '*':
-            probe = ' '
-        self.__training_[row][col] = probe
-        alternate_valid = self.__ValidateTraining()
-        self.__training_[row][col] = training_cell
-        if alternate_valid and (random.random() < self.__unknown_probability_):
-            return 2
-        # without altenatives
-        if original_cell == '*':
-            return 1
-        return 0
-
+    def GetTrainingForecast(self) -> str:
+        # Return training data for field
+        # Return: list of [row, col, predict]
+        training = []
+        for row in range(self.__row_amount_):
+            for col in range(self.__col_amount_):
+                if self.__field_[row][col] != '.':
+                    continue
+                # process closed cells only
+                original_cell = self.__map_[row][col]
+                if original_cell == '*':
+                    training.append([row, col, '*'])
+                else:
+                    training.append([row, col, 'c'])
+                # check alternate variant
+                training_cell = self.__training_[row][col]
+                # check another variant
+                probe = '*'
+                if original_cell == '*':
+                    probe = ' '
+                self.__training_[row][col] = probe
+                alternate_valid = self.__ValidateTraining()
+                self.__training_[row][col] = training_cell
+                if alternate_valid:
+                    training.append([row, col, '?'])
+        return training
 
     def Display(self):
         print("Field: ", self.__row_amount_, "x", self.__col_amount_, ", Turn: ", self.__step_, ", Max turns: ", self.__max_steps_, sep='')
@@ -108,6 +134,10 @@ class MineField:
             print(" ".join(self.__field_[row]), "  |  ", " ".join(self.__max_field_[row]), sep='')
         print("")
         print("Death amount: ", self.__death_amount_, sep='')
+
+
+    def GetDeathAmount(self):
+        return self.__death_amount_
 
 
     def __ReadField(self, file_name):
@@ -164,44 +194,44 @@ class MineField:
         return (target >= mines_amount) and (target <= (mines_amount + unknown_amount))
 
 
-# Proxy for external solver
-class Sweeper:
-    def __init__(self) -> None:
-        pass
-
-    def GetStep(self, field) -> int:
-        print("Step:")
-        row = int(input("row:")) - 1
-        col = int(input("column:")) - 1
-        return row, col
-
-
-
 # main() - Base logic of gaming
-field = MineField("f.txt")
 sweeper = miner_dnn.TensorFlowSweeper()
-while not field.Completed():
-    view = field.GetField()
-    row, col = sweeper.GetStep(view)
-    # Generate forecast
-    forecast = field.GetTrainingForecast(row, col)
-    sweeper.Train(view, row, col, forecast)
-    forecast_str = ""
-    if forecast == 0:
-        forecast_str = "Clear"
-    if forecast == 1:
-        forecast_str = "Mine"
-    if forecast == 2:
-        forecast_str = "Unknown 50/50"
-    print("Sweeper step: ", row + 1, "x", col + 1, ". Training forecast: ", forecast_str, sep='')
-    # step
-    result = field.MakeStep(row, col)
-    if not result:
-        # mine is found
-        print("Boom")
-        print("***************")
-        field.DisplayCurrentAndMax()
-        # start from beginning
-        field.Reset()
-    else:
-        field.DisplayCurrentAndMax()
+answer = input("Make a training [y/n]:")
+if answer == 'y' or answer == 'Y':
+    files = [f for f in os.listdir('.') if (os.path.isfile(f) and len(f) >= 5 and f[0] == "t" and f[-4:] == ".txt")]
+    for f in files:
+        field = MineField(f)
+        while not field.Completed():
+            view = field.GetField()
+            row, col = sweeper.GetStep(view)
+            result = field.MakeStep(row, col)
+            sweeper.Train(view, field.GetTrainingForecast())
+            if not result:
+                # Oops. Mine :(
+                field.Display()
+                # start from beginning
+                field.Reset()
+            # else:
+            #     print("    Field ", f, ": death ", field.GetDeathAmount(), " step ", field.GetCurrentStep(), sep='')
+        print("Field ", f, " de-mined with ", field.GetDeathAmount(), " death", sep='')
+# Checking of AI
+files = [f for f in os.listdir('.') if (os.path.isfile(f) and len(f) >= 5 and f[0] == "c" and f[-4:] == ".txt")]
+for f in files:
+    field_check = MineField(f)
+    check_steps = 0
+    while not field_check.Completed():
+        view = field_check.GetField()
+        row, col = sweeper.GetStep(view)
+        result = field_check.MakeStep(row, col)
+        if result:
+            check_steps += 1
+            print("    Field ", f, ": step ", field_check.GetCurrentStep(), sep='')
+        else:
+            # mine is found
+            params = field_check.GetFieldParams()
+            maximum_available_steps = params[0] * params[1] - params[2]
+            print("Check in ", f, ": ", check_steps, " steps from ", maximum_available_steps, sep='')
+            field_check.Display()
+            break
+    if field_check.Completed():
+        print("++Check in ", f, ": successfull", sep='')

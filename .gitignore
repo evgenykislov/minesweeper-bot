@@ -47,3 +47,5 @@ solvers/tetragonal_neural/data/
 emulator/data/
 
 emulator/__pycache__/
+
+*.txt
