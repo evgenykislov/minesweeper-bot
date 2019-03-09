@@ -49,3 +49,5 @@ emulator/data/
 emulator/__pycache__/
 
 *.txt
+
+bot/minesweeper_bot\.pro\.user
