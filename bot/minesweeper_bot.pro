@@ -25,10 +25,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        botdialog.cpp
+        botdialog.cpp \
+    screen.cpp \
+    eventfilter.cpp
 
 HEADERS += \
-        botdialog.h
+        botdialog.h \
+    screen.h \
+    eventfilter.h
 
 FORMS += \
         botdialog.ui

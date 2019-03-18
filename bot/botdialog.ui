@@ -1,7 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>BotDialog</class>
- <widget class="QDialog" name="BotDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="BotDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,12 +10,83 @@
     <height>300</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>BotDialog</string>
   </property>
+  <widget class="QPushButton" name="SetCornersBtn">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>40</y>
+     <width>83</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Corners</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="RightBottomBtn">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>40</y>
+     <width>83</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="CornersLbl">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>80</y>
+     <width>271</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Click left-top and right-bottom corners</string>
+   </property>
+  </widget>
+  <widget class="QProgressBar" name="CornersBar">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>110</y>
+     <width>251</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="value">
+    <number>0</number>
+   </property>
+  </widget>
  </widget>
- <layoutDefault spacing="6" margin="11" />
- <pixmapfunction></pixmapfunction>
+ <layoutdefault spacing="6" margin="11"/>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>SetCornersBtn</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnCornersBtn()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>71</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>OnCornersBtn()</slot>
+ </slots>
 </ui>
