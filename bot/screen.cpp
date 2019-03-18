@@ -79,7 +79,10 @@ void Screen::ProcessScreen() {
   unknown_images_.clear();
   for (unsigned int row_index = 0; row_index != row_amount_; ++row_index) {
     for (unsigned int col_index = 0; col_index != col_amount_; ++col_index) {
-      auto cell = field.copy(col_index * cell_width_, row_index * cell_height_, cell_width_, cell_height_).toImage();
+      auto cell = field.copy(col_index * cell_width_ + kCutMargin
+        , row_index * cell_height_ + kCutMargin
+        , cell_width_ - 2 * kCutMargin
+        , cell_height_ - 2 * kCutMargin).toImage();
       // Find cell type
       bool cell_found = false;
       for (auto& info: cells_storage_) {

@@ -21,12 +21,13 @@ CellTypeDialog::~CellTypeDialog()
 void CellTypeDialog::SetImage(const QImage& image) {
   // Scale the image to given size
   auto scaled_image = image.scaled(kImageSize, kImageSize, Qt::KeepAspectRatio);
-  QImage border_image(kImageSizeWithBorder, kImageSizeWithBorder, QImage::Format_ARGB32_Premultiplied);
-  QPainter painter(&border_image);
+  QImage border_image(kImageSizeWithBorder, kImageSizeWithBorder, QImage::Format_RGB888);
+  QPainter painter;
+  painter.begin(&border_image);
+  painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
   painter.setPen(border_linecolor);
-  painter.setCompositionMode(QPainter::CompositionMode_DestinationOver);
   painter.fillRect(border_image.rect(), border_backcolor);
-  for (unsigned int y = -kImageSizeWithBorder; y < kImageSizeWithBorder; y += border_line_step) {
+  for (int y = -kImageSizeWithBorder; y < kImageSizeWithBorder; y += border_line_step) {
     painter.drawLine(0, y, kImageSizeWithBorder, y + kImageSizeWithBorder);
   }
   assert(kImageSizeWithBorder >= kImageSize);

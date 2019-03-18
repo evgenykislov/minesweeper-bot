@@ -24,6 +24,7 @@ public:
   void SetImageType(const QImage& image, char cell_type);
 
  private:
+  const unsigned int kCutMargin = 2;
   QRect approx_field_rect_;
   QRect field_rect_;
   unsigned int approx_row_amount_;
