@@ -5,6 +5,7 @@
 #include <list>
 
 #include <QPixmap>
+using FieldType = std::vector<std::vector<char>>;
 
 class Screen
 {
@@ -14,10 +15,13 @@ public:
   void SetApproximatelyRect(const QRect& rect);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
 
-  bool Field(std::vector<std::vector<char>>& field); //< Get the game field from screen(desktop)
-  void State(bool& screen_absent, bool& field_undetected, bool& game_over, bool& unknown_images);
-  bool GetUnknownImages(std::list<QImage>& images);
-  void SetImageSymbol(const QPixmap& image, char symbol);
+  bool GetField(FieldType& field
+    , bool& screen_absent
+    , bool& field_undetected
+    , bool& game_over
+    , bool& unknown_images);
+  void GetUnknownImages(std::list<QImage>& images);
+  void SetImageType(const QPixmap& image, char cell_type);
 
  private:
   QRect approx_field_rect_;

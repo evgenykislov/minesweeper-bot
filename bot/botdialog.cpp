@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "botdialog.h"
 
 #include "ui_botdialog.h"
@@ -30,6 +32,7 @@ void BotDialog::OnCornersBtn() {
 }
 
 void BotDialog::CornersCompleted() {
+  CornersCancel();
   removeEventFilter(&filter_);
   releaseMouse();
   if (state_ == kCornersSelection) {
@@ -52,22 +55,77 @@ void BotDialog::OnRun() {
   auto row_amount = ui_->row_edt_->text().toUInt();
   auto col_amount = ui_->col_edt_->text().toUInt();
   scr_.SetFieldSize(row_amount, col_amount);
+  state_ = kRun;
+  timer_200ms_.start(kTimerInterval);
 }
 
-void BotDialog::CornersCancelled() {
+void BotDialog::OnImageClick() {
+
+
+}
+
+void BotDialog::CornersCancel() {
+  timer_200ms_.stop();
   removeEventFilter(&filter_);
   releaseMouse();
+}
+
+void BotDialog::MakeStep(const FieldType& field) {
+
+}
+
+void BotDialog::ShowUnknownImages() {
+  scr_.GetUnknownImages(unknown_images_);
+  assert(!unknown_images_.empty());
+  UpdateUnknownImages();
+}
+
+void BotDialog::UpdateUnknownImages() {
+  if (unknown_images_.empty()) {
+    // Run the gaming
+    state_ = kRun;
+    timer_200ms_.start(kTimerInterval);
+    return;
+  }
+  ui_->img_1_btn_->setIcon(QPixmap::fromImage(unknown_images_.front()));
 }
 
 void BotDialog::TimerTick() {
   if (state_ == kCornersSelection) {
     corners_interval_ += kTimerInterval;
     if (corners_interval_ >= kCornersTimeout) {
-      CornersCancelled();
+      CornersCancel();
+      state_ = kIdle;
+      return;
     }
-    else {
-      int progress = int(double(corners_interval_) / kCornersTimeout * kProgressScale);
-      ui_->CornersBar->setValue(progress);
+    int progress = int(double(corners_interval_) / kCornersTimeout * kProgressScale);
+    ui_->CornersBar->setValue(progress);
+    return;
+  }
+  if (state_ == kRun) {
+    FieldType field;
+    bool no_screen;
+    bool no_field;
+    bool game_over;
+    bool unknown_images;
+    auto valid_field = scr_.GetField(field, no_screen, no_field, game_over, unknown_images);
+    if (valid_field) {
+      MakeStep(field);
+      return;
+    }
+    timer_200ms_.stop();
+    // There are some stoppers
+    if (no_screen || no_field) {
+      state_ = kIdle;
+      return;
+    }
+    if (game_over) {
+      state_ = kIdle;
+      return;
+    }
+    if (unknown_images) {
+      state_ = kWaitForImageRecognition;
+      ShowUnknownImages();
     }
   }
 }

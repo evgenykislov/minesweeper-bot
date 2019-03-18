@@ -88,6 +88,28 @@
     </rect>
    </property>
   </widget>
+  <widget class="QPushButton" name="img_1_btn_">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>240</y>
+     <width>51</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>48</width>
+     <height>48</height>
+    </size>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
@@ -124,9 +146,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>img_1_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnImageClick()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>55</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnCornersBtn()</slot>
   <slot>OnRun()</slot>
+  <slot>OnImageClick()</slot>
  </slots>
 </ui>

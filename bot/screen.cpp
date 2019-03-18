@@ -27,6 +27,29 @@ void Screen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   RefineRect();
 }
 
+bool Screen::GetField(FieldType& field
+  , bool& screen_absent
+  , bool& field_undetected
+  , bool& game_over
+  , bool& unknown_images) {
+  ProcessScreen();
+  screen_absent = screen_absent_;
+  field_undetected = field_undetected_;
+  game_over = game_over_;
+  unknown_images = !unknown_images_.empty();
+  if (screen_absent || field_undetected || game_over || unknown_images) {
+    field.clear();
+    return false;
+  }
+  field = field_;
+  return true;
+}
+
+void Screen::GetUnknownImages(std::list<QImage>& images) {
+  images.swap(unknown_images_);
+  unknown_images_.clear();
+}
+
 void Screen::ProcessScreen() {
   QScreen *screen = QGuiApplication::primaryScreen();
   if (!screen) {
@@ -65,9 +88,9 @@ void Screen::ProcessScreen() {
           cell_found = true;
           break;
         }
+      }
       if (cell_found) continue;
       unknown_images_.push_back(cell);
-      }
     }
   }
 }
