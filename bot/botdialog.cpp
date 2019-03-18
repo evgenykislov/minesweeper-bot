@@ -1,7 +1,7 @@
 #include <cassert>
 
 #include "botdialog.h"
-
+#include "celltypedialog.h"
 #include "ui_botdialog.h"
 #include "eventfilter.h"
 
@@ -11,6 +11,7 @@ BotDialog::BotDialog(QWidget *parent)
   , ui_(new Ui::BotDialog)
   , corners_interval_(0)
 {
+  setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
   connect(&filter_, &EventFilter::TwoClicks, this, &BotDialog::CornersCompleted, Qt::QueuedConnection);
@@ -71,7 +72,7 @@ void BotDialog::CornersCancel() {
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
-
+  int k = 0;
 }
 
 void BotDialog::ShowUnknownImages() {
@@ -87,7 +88,15 @@ void BotDialog::UpdateUnknownImages() {
     timer_200ms_.start(kTimerInterval);
     return;
   }
-  ui_->img_1_btn_->setIcon(QPixmap::fromImage(unknown_images_.front()));
+  CellTypeDialog dlg;
+  dlg.SetImage(unknown_images_.front());
+  if (dlg.exec() == QDialog::Rejected) {
+    // Nothing to do. Wait for ...
+    return;
+  }
+  scr_.SetImageType(unknown_images_.front(), dlg.GetCellType());
+  unknown_images_.pop_front();
+  UpdateUnknownImages();
 }
 
 void BotDialog::TimerTick() {

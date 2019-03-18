@@ -21,7 +21,7 @@ public:
     , bool& game_over
     , bool& unknown_images);
   void GetUnknownImages(std::list<QImage>& images);
-  void SetImageType(const QPixmap& image, char cell_type);
+  void SetImageType(const QImage& image, char cell_type);
 
  private:
   QRect approx_field_rect_;

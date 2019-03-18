@@ -50,6 +50,13 @@ void Screen::GetUnknownImages(std::list<QImage>& images) {
   unknown_images_.clear();
 }
 
+void Screen::SetImageType(const QImage& image, char cell_type) {
+  CellInfo info;
+  info.cell_image_ = image;
+  info.cell_type_ = cell_type;
+  cells_storage_.push_back(info);
+}
+
 void Screen::ProcessScreen() {
   QScreen *screen = QGuiApplication::primaryScreen();
   if (!screen) {
