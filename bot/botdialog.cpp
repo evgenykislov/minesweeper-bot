@@ -32,6 +32,26 @@ void BotDialog::OnCornersBtn() {
 void BotDialog::CornersCompleted() {
   removeEventFilter(&filter_);
   releaseMouse();
+  if (state_ == kCornersSelection) {
+    QRect rect;
+    if (!filter_.GetRect(rect)) {
+      // Errors in corners selection
+      state_ = kIdle;
+    }
+    else {
+      scr_.SetApproximatelyRect(rect);
+      state_ = kSizeModification;
+    }
+  }
+}
+
+void BotDialog::OnRun() {
+  if (state_ != kSizeModification) {
+    return;
+  }
+  auto row_amount = ui_->row_edt_->text().toUInt();
+  auto col_amount = ui_->col_edt_->text().toUInt();
+  scr_.SetFieldSize(row_amount, col_amount);
 }
 
 void BotDialog::CornersCancelled() {

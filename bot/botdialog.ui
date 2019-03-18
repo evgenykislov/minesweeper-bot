@@ -26,17 +26,17 @@
     <string>Corners</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="RightBottomBtn">
+  <widget class="QPushButton" name="run_btn_">
    <property name="geometry">
     <rect>
-     <x>140</x>
-     <y>40</y>
+     <x>30</x>
+     <y>190</y>
      <width>83</width>
      <height>28</height>
     </rect>
    </property>
    <property name="text">
-    <string>PushButton</string>
+    <string>Go!</string>
    </property>
   </widget>
   <widget class="QLabel" name="CornersLbl">
@@ -64,6 +64,29 @@
    <property name="value">
     <number>0</number>
    </property>
+   <property name="textVisible">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="row_edt_">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>150</y>
+     <width>113</width>
+     <height>28</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="col_edt_">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>150</y>
+     <width>113</width>
+     <height>28</height>
+    </rect>
+   </property>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
@@ -85,8 +108,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>run_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnRun()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>71</x>
+     <y>203</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnCornersBtn()</slot>
+  <slot>OnRun()</slot>
  </slots>
 </ui>

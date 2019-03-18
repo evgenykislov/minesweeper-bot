@@ -5,6 +5,7 @@
 #include <QTimer>
 
 #include "eventfilter.h"
+#include "screen.h"
 
 namespace Ui {
 class BotDialog;
@@ -21,6 +22,7 @@ class BotDialog : public QDialog
  public slots:
   void OnCornersBtn();
   void CornersCompleted();
+  void OnRun();
 
  private:
   enum {
@@ -32,12 +34,14 @@ class BotDialog : public QDialog
   enum SettingState {
     kIdle,
     kCornersSelection,
+    kSizeModification,
   } state_;
 
   Ui::BotDialog* ui_;
   EventFilter filter_;
   QTimer timer_200ms_;
   size_t corners_interval_;
+  Screen scr_;
 
   void CornersCancelled();
 
