@@ -1,5 +1,8 @@
+#include <QApplication>
+#include <QDesktopWidget>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QTest>
 
 #include "screen.h"
 
@@ -13,6 +16,7 @@ Screen::Screen()
   , game_over_(false)
   , cell_width_(0)
   , cell_height_(0)
+  , screen_id_(-1)
 {
 }
 
@@ -25,6 +29,10 @@ void Screen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   approx_row_amount_ = row_amount;
   approx_col_amount_ = col_amount;
   RefineRect();
+}
+
+void Screen::SetScreenID(int id) {
+  screen_id_ = id;
 }
 
 bool Screen::GetField(FieldType& field
@@ -55,6 +63,15 @@ void Screen::SetImageType(const QImage& image, char cell_type) {
   info.cell_image_ = image;
   info.cell_type_ = cell_type;
   cells_storage_.push_back(info);
+}
+
+void Screen::MakeStep(unsigned int row, unsigned int col) {
+  QWidget* screen = QApplication::desktop()->screen(screen_id_);
+  int left = field_rect_.left() + col * cell_width_ + cell_width_ / 2;
+  int top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
+  QPoint point(left, top);
+  QTest::mouseMove(screen, point, -1);
+  QTest::mouseClick(screen, Qt::LeftButton, Qt::NoModifier, point, 100);
 }
 
 void Screen::ProcessScreen() {

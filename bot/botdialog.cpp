@@ -1,5 +1,7 @@
 #include <cassert>
 
+#include <QDesktopWidget>
+
 #include "botdialog.h"
 #include "celltypedialog.h"
 #include "ui_botdialog.h"
@@ -43,6 +45,7 @@ void BotDialog::CornersCompleted() {
       state_ = kIdle;
     }
     else {
+      scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
       scr_.SetApproximatelyRect(rect);
       state_ = kSizeModification;
     }
@@ -72,7 +75,11 @@ void BotDialog::CornersCancel() {
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
-  int k = 0;
+  static size_t step_index = 0;
+  if (step_index >= field[0].size()) {
+    return;
+  }
+  scr_.MakeStep(0, step_index);
 }
 
 void BotDialog::ShowUnknownImages() {

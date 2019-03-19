@@ -14,6 +14,7 @@ public:
 
   void SetApproximatelyRect(const QRect& rect);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
+  void SetScreenID(int id);
 
   bool GetField(FieldType& field
     , bool& screen_absent
@@ -22,6 +23,7 @@ public:
     , bool& unknown_images);
   void GetUnknownImages(std::list<QImage>& images);
   void SetImageType(const QImage& image, char cell_type);
+  void MakeStep(unsigned int row, unsigned int col);
 
  private:
   const unsigned int kCutMargin = 2;
@@ -50,6 +52,7 @@ public:
 
   std::vector<CellInfo> cells_storage_;
   std::vector<std::vector<char>> field_;
+  int screen_id_;
 };
 
 #endif // SCREEN_H
