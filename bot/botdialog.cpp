@@ -105,9 +105,10 @@ void BotDialog::CornersCancel() {
 void BotDialog::MakeStep(const FieldType& field) {
   static size_t step_index = 0;
   if (step_index >= field[0].size()) {
-    return;
+    step_index = 0;
   }
   scr_.MakeStep(0, step_index);
+  ++step_index;
 }
 
 void BotDialog::ShowUnknownImages() {

@@ -46,7 +46,7 @@ class BotDialog : public QDialog
   Ui::BotDialog* ui_;
   QTimer timer_200ms_;
   size_t corners_interval_;
-  Screen scr_;
+  BotScreen scr_;
   std::list<QImage> unknown_images_;
   std::unique_ptr<std::thread> hook_thread_;
   QPoint clicks_[kClickAmount];

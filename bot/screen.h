@@ -7,10 +7,10 @@
 #include <QPixmap>
 using FieldType = std::vector<std::vector<char>>;
 
-class Screen
+class BotScreen
 {
 public:
-  Screen();
+  BotScreen();
 
   void SetApproximatelyRect(const QRect& rect);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);

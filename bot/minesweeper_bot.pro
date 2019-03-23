@@ -24,8 +24,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-        main.cpp \
-        botdialog.cpp \
+    main.cpp \
+    botdialog.cpp \
     screen.cpp \
     celltypedialog.cpp
 
@@ -40,7 +40,7 @@ FORMS += \
 
 RESOURCES +=
 
-unix:!macx: LIBS += -L/usr/local/lib/ -luiohook
+unix:!macx: LIBS += -L/usr/local/lib/ -luiohook -lfakeInput
 
 INCLUDEPATH += /usr/local/include
 DEPENDPATH += /usr/local/include

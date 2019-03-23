@@ -4,9 +4,11 @@
 #include <QGuiApplication>
 #include <QTest>
 
+#include <fakeinput.hpp>
+
 #include "screen.h"
 
-Screen::Screen()
+BotScreen::BotScreen()
   : approx_row_amount_(0)
   , approx_col_amount_(0)
   , row_amount_(0)
@@ -20,22 +22,22 @@ Screen::Screen()
 {
 }
 
-void Screen::SetApproximatelyRect(const QRect& rect) {
+void BotScreen::SetApproximatelyRect(const QRect& rect) {
   approx_field_rect_ = rect;
   RefineRect();
 }
 
-void Screen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
+void BotScreen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   approx_row_amount_ = row_amount;
   approx_col_amount_ = col_amount;
   RefineRect();
 }
 
-void Screen::SetScreenID(int id) {
+void BotScreen::SetScreenID(int id) {
   screen_id_ = id;
 }
 
-bool Screen::GetField(FieldType& field
+bool BotScreen::GetField(FieldType& field
   , bool& screen_absent
   , bool& field_undetected
   , bool& game_over
@@ -53,28 +55,29 @@ bool Screen::GetField(FieldType& field
   return true;
 }
 
-void Screen::GetUnknownImages(std::list<QImage>& images) {
+void BotScreen::GetUnknownImages(std::list<QImage>& images) {
   images.swap(unknown_images_);
   unknown_images_.clear();
 }
 
-void Screen::SetImageType(const QImage& image, char cell_type) {
+void BotScreen::SetImageType(const QImage& image, char cell_type) {
   CellInfo info;
   info.cell_image_ = image;
   info.cell_type_ = cell_type;
   cells_storage_.push_back(info);
 }
 
-void Screen::MakeStep(unsigned int row, unsigned int col) {
+void BotScreen::MakeStep(unsigned int row, unsigned int col) {
   QWidget* screen = QApplication::desktop()->screen(screen_id_);
   int left = field_rect_.left() + col * cell_width_ + cell_width_ / 2;
   int top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
   QPoint point(left, top);
-  QTest::mouseMove(screen, point, -1);
-  QTest::mouseClick(screen, Qt::LeftButton, Qt::NoModifier, point, 100);
+  FakeInput::Mouse::moveTo(left, top);
+  FakeInput::Mouse::pressButton(FakeInput::Mouse_Left);
+  FakeInput::Mouse::releaseButton(FakeInput::Mouse_Left);
 }
 
-void Screen::ProcessScreen() {
+void BotScreen::ProcessScreen() {
   QScreen *screen = QGuiApplication::primaryScreen();
   if (!screen) {
     screen_absent_ = true;
@@ -122,7 +125,7 @@ void Screen::ProcessScreen() {
   }
 }
 
-void Screen::RefineRect() {
+void BotScreen::RefineRect() {
   row_amount_ = approx_row_amount_;
   col_amount_ = approx_col_amount_;
   if (row_amount_ == 0 || col_amount_ == 0) {
@@ -137,7 +140,7 @@ void Screen::RefineRect() {
   field_rect_.setWidth(cell_width_ * col_amount_);
 }
 
-void Screen::ClearField() {
+void BotScreen::ClearField() {
   field_.resize(row_amount_);
   for (size_t row_index = 0; row_index != row_amount_; ++row_index) {
     field_[row_index].resize(col_amount_);
