@@ -1,54 +1,84 @@
 #include <cassert>
+#include <mutex>
 
 #include <QDesktopWidget>
+
+#include <uiohook.h>
 
 #include "botdialog.h"
 #include "celltypedialog.h"
 #include "ui_botdialog.h"
-#include "eventfilter.h"
+
+using namespace std;
+
+function<void(int xpos, int ypos)> hook_lambda_;
+
+void HookHandle(uiohook_event* const event) {
+  assert(hook_lambda_);
+  if (!event) {
+    return;
+  }
+  if (event->type != EVENT_MOUSE_CLICKED) {
+    return;
+  }
+  if (event->data.mouse.button != MOUSE_BUTTON1) {
+    return;
+  }
+  hook_lambda_(event->data.mouse.x, event->data.mouse.y);
+}
+
 
 BotDialog::BotDialog(QWidget *parent)
   : QDialog(parent)
   , state_(kIdle)
   , ui_(new Ui::BotDialog)
   , corners_interval_(0)
+  , click_index_(0)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
-  connect(&filter_, &EventFilter::TwoClicks, this, &BotDialog::CornersCompleted, Qt::QueuedConnection);
   connect(&timer_200ms_, &QTimer::timeout, this, &BotDialog::TimerTick, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
+  hook_lambda_ = [this](int xpos, int ypos) {
+    emit DoClickPosition(xpos, ypos);
+  };
+  hook_set_dispatch_proc(HookHandle);
 }
 
 BotDialog::~BotDialog()
 {
+  CornersCancel();
+  hook_set_dispatch_proc(nullptr);
+  hook_lambda_ = nullptr;
   delete ui_;
 }
 
 void BotDialog::OnCornersBtn() {
-  filter_.Clear();
-  installEventFilter(&filter_);
-  grabMouse();
-  corners_interval_ = 0;
-  timer_200ms_.start(kTimerInterval);
-  state_ = kCornersSelection;
+  try {
+    CornersCancel();
+    // Start new corners request
+    assert(!hook_thread_);
+    click_index_ = 0;
+    hook_thread_.reset(new std::thread([](){
+      hook_run();
+    }));
+    corners_interval_ = 0;
+    timer_200ms_.start(kTimerInterval);
+    state_ = kCornersSelection;
+  }
+  catch (exception&) {
+    state_ = kIdle;
+    timer_200ms_.stop();
+  }
 }
 
-void BotDialog::CornersCompleted() {
+void BotDialog::CornersCompleted(QRect frame) {
   CornersCancel();
-  removeEventFilter(&filter_);
-  releaseMouse();
   if (state_ == kCornersSelection) {
-    QRect rect;
-    if (!filter_.GetRect(rect)) {
-      // Errors in corners selection
-      state_ = kIdle;
-    }
-    else {
-      scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-      scr_.SetApproximatelyRect(rect);
-      state_ = kSizeModification;
-    }
+    scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
+    scr_.SetApproximatelyRect(frame);
+    state_ = kSizeModification;
   }
 }
 
@@ -63,15 +93,13 @@ void BotDialog::OnRun() {
   timer_200ms_.start(kTimerInterval);
 }
 
-void BotDialog::OnImageClick() {
-
-
-}
-
 void BotDialog::CornersCancel() {
   timer_200ms_.stop();
-  removeEventFilter(&filter_);
-  releaseMouse();
+  if (hook_thread_ && hook_thread_->joinable()) {
+    hook_stop();
+    hook_thread_->join();
+  }
+  hook_thread_.reset();
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
@@ -143,5 +171,19 @@ void BotDialog::TimerTick() {
       state_ = kWaitForImageRecognition;
       ShowUnknownImages();
     }
+  }
+}
+
+void BotDialog::OnClickPosition(int xpos, int ypos) {
+  if (click_index_ >= kClickAmount) {
+    return;
+  }
+  clicks_[click_index_] = QPoint(xpos, ypos);
+  ++click_index_;
+  if (click_index_ == kClickAmount) {
+    QRect rect;
+    rect.setTopLeft(clicks_[0]);
+    rect.setBottomRight(clicks_[1]);
+    CornersCompleted(rect.normalized());
   }
 }

@@ -27,17 +27,20 @@ SOURCES += \
         main.cpp \
         botdialog.cpp \
     screen.cpp \
-    eventfilter.cpp \
     celltypedialog.cpp
 
 HEADERS += \
-        botdialog.h \
+    botdialog.h \
     screen.h \
-    eventfilter.h \
     celltypedialog.h
 
 FORMS += \
-        botdialog.ui \
+    botdialog.ui \
     celltypedialog.ui
 
 RESOURCES +=
+
+unix:!macx: LIBS += -L/usr/local/lib/ -luiohook
+
+INCLUDEPATH += /usr/local/include
+DEPENDPATH += /usr/local/include
