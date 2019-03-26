@@ -1,6 +1,7 @@
 # Author: Evgeny Kislov
 
 import tensorflow as tf
+import numpy as np
 import copy
 
 # hack for suppress warnings
@@ -22,6 +23,18 @@ class TensorFlowSweeper:
     def Train(self, field, training):
         self.__solver_.train(input_fn = lambda: self.__SolverInputData(field, training), steps=1)
         pass
+
+
+    def ExportModelParameters(self):
+        self.__ExportDnnLayer(0, "kernel")
+        self.__ExportDnnLayer(0, "bias")
+        self.__ExportDnnLayer(1, "kernel")
+        self.__ExportDnnLayer(1, "bias")
+        self.__ExportDnnLayer(2, "kernel")
+        self.__ExportDnnLayer(2, "bias")
+        self.__ExportDnnLogits("kernel")
+        self.__ExportDnnLogits("bias")
+
 
     def __GetColumnName(self, row, col):
         if row == 0 and col == 0:
@@ -135,6 +148,7 @@ class TensorFlowSweeper:
                 col_name = self.__GetColumnName(row - target_row, col - target_col)
                 features[col_name].append(symbol)
 
+
     def __CreateEmptyFeatures(self):
         features = {}
         for row in range(-self.__margin_size_, self.__margin_size_ + 1):
@@ -144,4 +158,16 @@ class TensorFlowSweeper:
                 col_name = self.__GetColumnName(row, col)
                 features[col_name] = []
         return features
+
+
+    def __ExportDnnLayer(self, layer_index, data_name):
+        variable_name = "dnn/hiddenlayer_" + str(layer_index) + "/" + data_name
+        file_name = "dnn_" + str(layer_index) + "_" + data_name + ".txt"
+        np.savetxt(file_name, self.__solver_.get_variable_value(variable_name), fmt = "%.5f")
+
+
+    def __ExportDnnLogits(self, data_name):
+        variable_name = "dnn/logits/" + data_name
+        file_name = "dnn_logits_" + data_name + ".txt"
+        np.savetxt(file_name, self.__solver_.get_variable_value(variable_name), fmt = "%.5f")
 
