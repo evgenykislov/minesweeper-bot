@@ -27,12 +27,14 @@ SOURCES += \
     main.cpp \
     botdialog.cpp \
     screen.cpp \
-    celltypedialog.cpp
+    celltypedialog.cpp \
+    dnnclassifier.cpp
 
 HEADERS += \
     botdialog.h \
     screen.h \
-    celltypedialog.h
+    celltypedialog.h \
+    dnnclassifier.h
 
 FORMS += \
     botdialog.ui \
