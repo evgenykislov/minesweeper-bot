@@ -32,6 +32,9 @@ void SaveMark(ofstream& stream) {
 void SaveFileWithValues(ofstream& stream, const char* values_file) {
   assert(values_file);
   ifstream input(values_file);
+  if (!input) {
+    return;
+  }
   float value;
   while (true) {
     input >> value;
