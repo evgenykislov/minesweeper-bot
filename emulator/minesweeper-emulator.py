@@ -196,8 +196,15 @@ class MineField:
 
 # main() - Base logic of gaming
 sweeper = miner_dnn.TensorFlowSweeper()
-answer = input("Make a training [y/n]:")
-if answer == 'y' or answer == 'Y':
+print("Minesweeper bot emulator. Evgeny Kislov, 2019")
+print("Commands:")
+print("1 - Train model and check it")
+print("2 - Check model only")
+print("3 - Export model parameters")
+print("0 - Exit")
+answer = input("Select command [1/2/3/0]:")
+# Model training
+if answer == '1':
     files = [f for f in os.listdir('.') if (os.path.isfile(f) and len(f) >= 5 and f[0] == "t" and f[-4:] == ".txt")]
     for f in files:
         field = MineField(f)
@@ -214,24 +221,29 @@ if answer == 'y' or answer == 'Y':
             # else:
             #     print("    Field ", f, ": death ", field.GetDeathAmount(), " step ", field.GetCurrentStep(), sep='')
         print("Field ", f, " de-mined with ", field.GetDeathAmount(), " death", sep='')
-# Checking of AI
-files = [f for f in os.listdir('.') if (os.path.isfile(f) and len(f) >= 5 and f[0] == "c" and f[-4:] == ".txt")]
-for f in files:
-    field_check = MineField(f)
-    check_steps = 0
-    while not field_check.Completed():
-        view = field_check.GetField()
-        row, col = sweeper.GetStep(view)
-        result = field_check.MakeStep(row, col)
-        if result:
-            check_steps += 1
-            print("    Field ", f, ": step ", field_check.GetCurrentStep(), sep='')
-        else:
-            # mine is found
-            params = field_check.GetFieldParams()
-            maximum_available_steps = params[0] * params[1] - params[2]
-            print("Check in ", f, ": ", check_steps, " steps from ", maximum_available_steps, sep='')
-            field_check.Display()
-            break
-    if field_check.Completed():
-        print("++Check in ", f, ": successfull", sep='')
+# Model checking
+if answer == '1' or answer == '2':
+    # Checking of AI
+    files = [f for f in os.listdir('.') if (os.path.isfile(f) and len(f) >= 5 and f[0] == "c" and f[-4:] == ".txt")]
+    for f in files:
+        field_check = MineField(f)
+        check_steps = 0
+        while not field_check.Completed():
+            view = field_check.GetField()
+            row, col = sweeper.GetStep(view)
+            result = field_check.MakeStep(row, col)
+            if result:
+                check_steps += 1
+                print("    Field ", f, ": step ", field_check.GetCurrentStep(), sep='')
+            else:
+                # mine is found
+                params = field_check.GetFieldParams()
+                maximum_available_steps = params[0] * params[1] - params[2]
+                print("Check in ", f, ": ", check_steps, " steps from ", maximum_available_steps, sep='')
+                field_check.Display()
+                break
+        if field_check.Completed():
+            print("++Check in ", f, ": successfull", sep='')
+# Model export
+if answer == '3':
+    sweeper.ExportModelParameters()
