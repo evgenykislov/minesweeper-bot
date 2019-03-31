@@ -44,6 +44,7 @@ BotDialog::BotDialog(QWidget *parent)
     emit DoClickPosition(xpos, ypos);
   };
   hook_set_dispatch_proc(HookHandle);
+  solver.LoadModel("model.raw");
 }
 
 BotDialog::~BotDialog()
@@ -103,12 +104,11 @@ void BotDialog::CornersCancel() {
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
-  static size_t step_index = 0;
-  if (step_index >= field[0].size()) {
-    step_index = 0;
-  }
-  scr_.MakeStep(0, step_index);
-  ++step_index;
+  unsigned int row;
+  unsigned int col;
+  bool sure_step;
+  solver.GetStep(field, row, col, sure_step);
+  scr_.MakeStep(row, col);
 }
 
 void BotDialog::ShowUnknownImages() {
