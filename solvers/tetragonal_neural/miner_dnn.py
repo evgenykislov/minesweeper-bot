@@ -36,6 +36,20 @@ class TensorFlowSweeper:
         self.__ExportDnnLogits("bias")
 
 
+    def ExportProbabilities(self, field):
+        row_amount = len(field)
+        col_amount = len(field[0])
+        positions = []
+        for row in range(row_amount):
+            for col in range(col_amount):
+                positions.append([row, col])
+        if len(positions) == 0:
+            raise ValueError("Empty list of cells for prediction")
+        predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions), yield_single_examples = False)
+        forecast = next(predict)
+        np.savetxt("test_probabilities.txt", forecast["probabilities"], fmt = "%.5f")
+
+
     def __GetColumnName(self, row, col):
         if row == 0 and col == 0:
             raise ValueError("Logic error: request name for cel (0, 0)")
@@ -96,9 +110,6 @@ class TensorFlowSweeper:
     def __PredictInputData(self, field, positions):
         features = self.__CreateEmptyFeatures()
         for pos in positions:
-            cell = field[pos[0]][pos[1]]
-            if cell != '.':
-                continue
             self.__AddDnnData(field, pos[0], pos[1], features)
         return features
 
