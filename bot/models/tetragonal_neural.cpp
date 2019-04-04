@@ -4,7 +4,7 @@
 
 #include <QFile>
 
-#include "model_960_140_21_3.h"
+#include "models/tetragonal_neural.h"
 
 
 using namespace std;

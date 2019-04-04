@@ -1,2 +1,2 @@
-#include "dnnclassifier.h"
+#include "classifier.h"
 

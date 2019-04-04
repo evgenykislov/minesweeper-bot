@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include <dnnclassifier.h>
+#include "classifier.h"
 
 class Model_960_140_21_3: public DnnClassifier
 {
