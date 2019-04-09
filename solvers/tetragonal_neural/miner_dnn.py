@@ -7,6 +7,24 @@ import copy
 # hack for suppress warnings
 tf.estimator.Estimator._validate_features_in_predict_input = lambda *args: None
 
+
+class ExportHook(tf.train.SessionRunHook):
+    def after_create_session(self, session, coord):
+        with tf.variable_scope("dnn/logits", reuse = True):
+            bias = tf.get_variable("bias/part_0")
+            bias_value = np.zeros(3, dtype = np.float32)
+            bias.load(bias_value, session)
+            kernel = tf.get_variable("kernel/part_0")
+            kernel_value = np.zeros((21, 3), dtype = np.float32)
+            kernel.load(kernel_value, session)
+            np.savetxt("dnn_logits_bias.txt", bias_value, fmt = "%.8f")
+            np.savetxt("dnn_logits_kernel.txt", kernel_value, fmt = "%.8f")
+            # file_name = "dnn_" + "0" + "_" + "bias" + ".txt"
+            # np.savetxt(file_name, tf.get_variable(variable_name).read_value(), fmt = "%.5f")
+
+
+
+
 class TensorFlowSweeper:
     def __init__(self) -> None:
         self.__margin_size_ = 4
@@ -45,9 +63,10 @@ class TensorFlowSweeper:
                 positions.append([row, col])
         if len(positions) == 0:
             raise ValueError("Empty list of cells for prediction")
-        predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions), yield_single_examples = False)
+        hook = [ExportHook()]
+        predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions), hooks = hook, yield_single_examples = False)
         forecast = next(predict)
-        np.savetxt("test_probabilities.txt", forecast["probabilities"], fmt = "%.5f")
+        np.savetxt("test.txt", forecast["probabilities"], fmt = "%.5f")
 
 
     def __GetColumnName(self, row, col):
@@ -174,11 +193,10 @@ class TensorFlowSweeper:
     def __ExportDnnLayer(self, layer_index, data_name):
         variable_name = "dnn/hiddenlayer_" + str(layer_index) + "/" + data_name
         file_name = "dnn_" + str(layer_index) + "_" + data_name + ".txt"
-        np.savetxt(file_name, self.__solver_.get_variable_value(variable_name), fmt = "%.5f")
+        np.savetxt(file_name, self.__solver_.get_variable_value(variable_name), fmt = "%.8f")
 
 
     def __ExportDnnLogits(self, data_name):
         variable_name = "dnn/logits/" + data_name
         file_name = "dnn_logits_" + data_name + ".txt"
-        np.savetxt(file_name, self.__solver_.get_variable_value(variable_name), fmt = "%.5f")
-
+        np.savetxt(file_name, self.__solver_.get_variable_value(variable_name), fmt = "%.8f")
