@@ -5,28 +5,31 @@
 
 #include "classifier.h"
 
-class Model_960_140_21_3: public DnnClassifier
+class ModelTetragonalNeural: public Classifier
 {
  public:
-  Model_960_140_21_3();
-  virtual ~Model_960_140_21_3();
-  virtual bool LoadModel(const QString& file_name) override;
+  ModelTetragonalNeural();
+  virtual ~ModelTetragonalNeural();
+  virtual bool LoadModel(std::vector<uint8_t>&& data) override;
   virtual void GetStep(const Field& field, unsigned int& step_row, unsigned int& step_col, bool& sure_step) override;
+  virtual void GetTestResponse(TestResponse& response);
 
  private:
-  Model_960_140_21_3(const Model_960_140_21_3&) = delete;
-  Model_960_140_21_3(Model_960_140_21_3&&) = delete;
-  Model_960_140_21_3& operator=(const Model_960_140_21_3&) = delete;
-  Model_960_140_21_3& operator=(Model_960_140_21_3&&) = delete;
+  ModelTetragonalNeural(const ModelTetragonalNeural&) = delete;
+  ModelTetragonalNeural(ModelTetragonalNeural&&) = delete;
+  ModelTetragonalNeural& operator=(const ModelTetragonalNeural&) = delete;
+  ModelTetragonalNeural& operator=(ModelTetragonalNeural&&) = delete;
 
   enum {
     kFileSize = 4240512,
     kInputs = 960,
+    kInputsPerCell = 12,
     kLayer0Nodes = 960,
     kLayer1Nodes = 140,
     kLayer2Nodes = 21,
     kLayerLogitsNodes = 3,
     kMarginSize = 4,
+    kRowsAmount = 9,
   };
 
   enum {
@@ -34,6 +37,9 @@ class Model_960_140_21_3: public DnnClassifier
     kMineLogit = 1,
     kUnknownLogit = 2,
   };
+
+  const float kMinClearProbability = 0.6f;
+  const float kMaxMineProbability = 0.2f;
 
   typedef float InputLayer[kInputs];
   typedef float LogitsLayer[kLayerLogitsNodes];
@@ -51,7 +57,16 @@ class Model_960_140_21_3: public DnnClassifier
     float bias_logits[kLayerLogitsNodes];
   };
   #pragma pack(pop)
+  static_assert(sizeof(Model) == kFileSize, "Wrong format of model data");
 
+  struct ProbeInfo {
+    unsigned int row;
+    unsigned int col;
+    ProbeValues value;
+  };
+  using Probabilities = std::vector<ProbeInfo>;
+
+  std::vector<uint8_t> model_data_;
   Model* model_;
 
   void FormInput(const Field& field, unsigned int target_row, unsigned int target_col, InputLayer& inputs);
@@ -65,6 +80,7 @@ class Model_960_140_21_3: public DnnClassifier
   void ActivateLayer(float (&layer)[size]);
   template<unsigned int size>
   void LogitsProbability(float (&layer)[size], unsigned int& max_index);
+  void GetProbabilities(const Field& field, Probabilities& probes, bool hide_cells_only);
 };
 
 #endif // MODEL_960_140_21_3_H

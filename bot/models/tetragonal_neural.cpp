@@ -1,98 +1,78 @@
+#include <algorithm>
 #include <cassert>
-#include <exception>
+#include <stdexcept>
 #include <cmath>
 
-#include <QFile>
-
-#include "models/tetragonal_neural.h"
-
+#include "tetragonal_neural.h"
 
 using namespace std;
 
-Model_960_140_21_3::Model_960_140_21_3()
+ModelTetragonalNeural::ModelTetragonalNeural()
   : model_(nullptr)
 {
 }
 
-Model_960_140_21_3::~Model_960_140_21_3() {
-  delete model_;
+ModelTetragonalNeural::~ModelTetragonalNeural() {
 }
 
-bool Model_960_140_21_3::LoadModel(const QString& file_name) {
-  delete model_;
+bool ModelTetragonalNeural::LoadModel(std::vector<uint8_t>&& data) {
   model_ = nullptr;
+  model_data_.clear();
   // Read file data
-  QFile model_file(file_name);
-  if (!model_file.open(QIODevice::ReadOnly)) {
+  if (data.size() != kFileSize) {
     return false;
   }
-  if (model_file.size() != kFileSize) {
-    return false;
-  }
-  try {
-    model_ = new Model;
-    static_assert(sizeof(Model) == kFileSize, "Wrong format of model data");
-    if (model_file.read((char*)model_, kFileSize) != kFileSize) {
-      delete model_;
-      model_ = nullptr;
-      return false;
-    }
-  }
-  catch (bad_alloc&) {
-    return false;
-  }
+  model_data_ = data;
+  model_ = (Model*)model_data_.data();
   return true;
 }
 
-void Model_960_140_21_3::GetStep(const Field& field, unsigned int& step_row, unsigned int& step_col, bool& sure_step) {
-  const float min_clear_probability = 0.6f;
-  const float max_mine_probability = 1.0f;
-  unsigned int clear_row;
-  unsigned int clear_col;
-  float clear_probability = min_clear_probability;
-  unsigned int non_mine_row;
-  unsigned int non_mine_col;
-  float mine_probability = max_mine_probability;
-
-  for (size_t row = 0; row < field.size(); ++row) {
-    for (size_t col = 0; col < field[row].size(); ++col) {
-      if (field[row][col] != '.') {
-        continue;
-      }
-      InputLayer inputs;
-      FormInput(field, row, col, inputs);
-      LogitsLayer logits;
-      unsigned int max_logit;
-      CalculateModel(inputs, logits, max_logit);
-      if (logits[kClearLogit] > clear_probability) {
-        clear_probability = logits[kClearLogit];
-        clear_row = row;
-        clear_col = col;
-      }
-      if (logits[kMineLogit] < mine_probability) {
-        mine_probability = logits[kMineLogit];
-        non_mine_row = row;
-        non_mine_col = col;
-      }
+void ModelTetragonalNeural::GetStep(const Field& field, unsigned int& step_row, unsigned int& step_col, bool& sure_step) {
+  Probabilities probes;
+  GetProbabilities(field, probes, true);
+  if (probes.empty()) {
+    throw runtime_error("There isn't available step");
+  }
+  auto best_clear = probes.begin();
+  auto worst_mine = probes.begin();
+  for (auto iter = probes.begin(); iter != probes.end(); ++iter) {
+    if (iter->value.clear_probe > best_clear->value.clear_probe) {
+      best_clear = iter;
+    }
+    if (iter->value.mine_probe < worst_mine->value.mine_probe) {
+      worst_mine = iter;
     }
   }
-  if (clear_probability > min_clear_probability) {
-    step_row = clear_row;
-    step_col = clear_col;
+  if (best_clear->value.clear_probe >= kMinClearProbability) {
+    step_row = best_clear->row;
+    step_col = best_clear->col;
     sure_step = true;
     return;
   }
-  if (mine_probability < max_mine_probability) {
-    step_row = non_mine_row;
-    step_col = non_mine_col;
-    sure_step = false;
-    return;
-  }
-  throw runtime_error("There isn't available step");
+  step_row = worst_mine->row;
+  step_col = worst_mine->col;
+  sure_step = worst_mine->value.mine_probe < kMaxMineProbability;
 }
 
-void Model_960_140_21_3::FormInput(const Field& field, unsigned int target_row, unsigned int target_col, InputLayer& inputs) {
-  unsigned int input_index = 0;
+void ModelTetragonalNeural::GetTestResponse(TestResponse& response) {
+  Field field;
+  Probabilities probes;
+  GetTestField(field);
+  GetProbabilities(field, probes, false);
+  sort(probes.begin(), probes.end(), [](const ProbeInfo& a1, const ProbeInfo& a2) -> bool {
+    if (a2.row > a1.row) { return true; }
+    if (a2.row < a1.row) { return false; }
+    if (a2.col > a1.col) { return true; }
+    return false;
+  });
+  response.clear();
+  for (auto iter = probes.begin(); iter != probes.end(); ++iter) {
+    response.push_back(iter->value);
+  }
+}
+
+void ModelTetragonalNeural::FormInput(const Field& field, unsigned int target_row, unsigned int target_col, InputLayer& inputs) {
+  unsigned int cell_index = 0;
   for (int row = (int)target_row - kMarginSize; row <= (int)target_row + kMarginSize; ++row) {
     for (int col = (int)target_col - kMarginSize; col <= (int)target_col + kMarginSize; ++col) {
       if (row == (int)target_row && col == (int)target_col) {
@@ -105,25 +85,26 @@ void Model_960_140_21_3::FormInput(const Field& field, unsigned int target_row, 
         }
       }
       // Fill inputs
-      assert(input_index < kInputs);
-      inputs[input_index++] = symbol == ' ' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '.' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '*' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '0' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '1' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '2' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '3' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '4' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '5' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '6' ? 1 : 0; assert(input_index < kInputs);
-      inputs[input_index++] = symbol == '7' ? 1 : 0; assert(input_index < kInputs);
+      unsigned int input_index = cell_index * kInputsPerCell;
+      assert(input_index <= (kInputs - kInputsPerCell));
+      inputs[input_index++] = symbol == ' ' ? 1 : 0;
+      inputs[input_index++] = symbol == '.' ? 1 : 0;
+      inputs[input_index++] = symbol == '*' ? 1 : 0;
+      inputs[input_index++] = symbol == '0' ? 1 : 0;
+      inputs[input_index++] = symbol == '1' ? 1 : 0;
+      inputs[input_index++] = symbol == '2' ? 1 : 0;
+      inputs[input_index++] = symbol == '3' ? 1 : 0;
+      inputs[input_index++] = symbol == '4' ? 1 : 0;
+      inputs[input_index++] = symbol == '5' ? 1 : 0;
+      inputs[input_index++] = symbol == '6' ? 1 : 0;
+      inputs[input_index++] = symbol == '7' ? 1 : 0;
       inputs[input_index++] = symbol == '8' ? 1 : 0;
+      ++cell_index;
     }
   }
-  assert(input_index == kInputs);
 }
 
-void Model_960_140_21_3::CalculateModel(const InputLayer& inputs, LogitsLayer& logits, unsigned int& max_logit) {
+void ModelTetragonalNeural::CalculateModel(const InputLayer& inputs, LogitsLayer& logits, unsigned int& max_logit) {
   if (!model_) {
     throw runtime_error("Model don't loaded");
   }
@@ -141,7 +122,7 @@ void Model_960_140_21_3::CalculateModel(const InputLayer& inputs, LogitsLayer& l
 }
 
 template<unsigned int input_size, unsigned int output_size>
-void Model_960_140_21_3::CalculateLayer(const float (&inputs)[input_size]
+void ModelTetragonalNeural::CalculateLayer(const float (&inputs)[input_size]
     , float (&outputs)[output_size]
     , const float (&kernel)[input_size][output_size]
     , const float (&bias)[output_size]) {
@@ -159,7 +140,7 @@ void Model_960_140_21_3::CalculateLayer(const float (&inputs)[input_size]
 }
 
 template<unsigned int size>
-void Model_960_140_21_3::ActivateLayer(float (&layer)[size]) {
+void ModelTetragonalNeural::ActivateLayer(float (&layer)[size]) {
   for (unsigned int index = 0; index < size; ++index) {
     if (layer[index] < 0) {
       layer[index] = 0.0f;
@@ -168,7 +149,7 @@ void Model_960_140_21_3::ActivateLayer(float (&layer)[size]) {
 }
 
 template<unsigned int size>
-void Model_960_140_21_3::LogitsProbability(float (&layer)[size], unsigned int& max_index) {
+void ModelTetragonalNeural::LogitsProbability(float (&layer)[size], unsigned int& max_index) {
   assert(size != 0);
   max_index = 0;
   float max_value = -1.0f;
@@ -185,5 +166,27 @@ void Model_960_140_21_3::LogitsProbability(float (&layer)[size], unsigned int& m
   assert(probability_summ > 0.0f);
   for (unsigned int index = 0; index < size; ++index) {
     layer[index] /= probability_summ;
+  }
+}
+
+void ModelTetragonalNeural::GetProbabilities(const Field& field, Probabilities& probes, bool hide_cells_only) {
+  for (unsigned int row = 0; row < field.size(); ++row) {
+    for (unsigned int col = 0; col < field[row].size(); ++col) {
+      if (hide_cells_only && field[row][col] != kHideCell) {
+        continue;
+      }
+      InputLayer inputs;
+      FormInput(field, row, col, inputs);
+      LogitsLayer logits;
+      unsigned int max_logit;
+      CalculateModel(inputs, logits, max_logit);
+      ProbeInfo info;
+      info.row = row;
+      info.col = col;
+      info.value.clear_probe = logits[kClearLogit];
+      info.value.mine_probe = logits[kMineLogit];
+      info.value.unknown_probe = logits[kUnknownLogit];
+      probes.push_back(info);
+    }
   }
 }
