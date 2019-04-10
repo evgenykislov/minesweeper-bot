@@ -10,19 +10,53 @@ tf.estimator.Estimator._validate_features_in_predict_input = lambda *args: None
 
 class ExportHook(tf.train.SessionRunHook):
     def after_create_session(self, session, coord):
+        # Layer 0
+        kernel_0 = np.zeros((960, 960), dtype=np.float32)
+        index = 36
+        disp = index * 12
+        kernel_0[disp][0] = 0.1
+        kernel_0[disp + 1][0] = 0.2
+        kernel_0[disp + 2][0] = 0.3
+        kernel_0[disp + 3][0] = 0.4
+        kernel_0[disp + 4][0] = 0.5
+        kernel_0[disp + 5][0] = 0.6
+        kernel_0[disp + 6][0] = 0.7
+        kernel_0[disp + 7][0] = 0.8
+        kernel_0[disp + 8][0] = 0.9
+        kernel_0[disp + 9][0] = 1.0
+        kernel_0[disp + 10][0] = 1.1
+        kernel_0[disp + 11][0] = 1.2
+        self.__ChangeHiddenLayer(session, 0, "kernel", kernel_0)
+        self.__ChangeHiddenLayer(session, 0, "bias", np.zeros((960,), dtype=np.float32))
+        # Layer 1
+        kernel_1 = np.zeros((960, 140), dtype=np.float32)
+        kernel_1[0][0] = 1.0
+        self.__ChangeHiddenLayer(session, 1, "kernel", kernel_1)
+        self.__ChangeHiddenLayer(session, 1, "bias", np.zeros((140,), dtype=np.float32))
+        # Layer 2
+        kernel_2 = np.zeros((140, 21), dtype=np.float32)
+        kernel_2[0][0] = 1.0
+        self.__ChangeHiddenLayer(session, 2, "kernel", kernel_2)
+        self.__ChangeHiddenLayer(session, 2, "bias", np.zeros((21,), dtype=np.float32))
+        # Logits
+        kernel_l = np.zeros((21, 3), dtype=np.float32)
+        kernel_l[0][0] = 1.0
+        self.__ChangeLogitsLayer(session, "kernel", kernel_l)
+        self.__ChangeLogitsLayer(session, "bias", np.zeros((3,), dtype=np.float32))
+
+
+    def __ChangeHiddenLayer(self, session, layer_index, data_name, new_value):
+        with tf.variable_scope("dnn/hiddenlayer_" + str(layer_index), reuse = True):
+            value = tf.get_variable(data_name + "/part_0")
+            value.load(new_value, session)
+            np.savetxt("dnn_" + str(layer_index) + "_" + data_name + ".txt", new_value, fmt = "%.8f")
+
+
+    def __ChangeLogitsLayer(self, session, data_name, new_value):
         with tf.variable_scope("dnn/logits", reuse = True):
-            bias = tf.get_variable("bias/part_0")
-            bias_value = np.zeros(3, dtype = np.float32)
-            bias.load(bias_value, session)
-            kernel = tf.get_variable("kernel/part_0")
-            kernel_value = np.zeros((21, 3), dtype = np.float32)
-            kernel.load(kernel_value, session)
-            np.savetxt("dnn_logits_bias.txt", bias_value, fmt = "%.8f")
-            np.savetxt("dnn_logits_kernel.txt", kernel_value, fmt = "%.8f")
-            # file_name = "dnn_" + "0" + "_" + "bias" + ".txt"
-            # np.savetxt(file_name, tf.get_variable(variable_name).read_value(), fmt = "%.5f")
-
-
+            value = tf.get_variable(data_name + "/part_0")
+            value.load(new_value, session)
+            np.savetxt("dnn_logits_" + data_name + ".txt", new_value, fmt = "%.8f")
 
 
 class TensorFlowSweeper:
@@ -64,7 +98,8 @@ class TensorFlowSweeper:
         if len(positions) == 0:
             raise ValueError("Empty list of cells for prediction")
         hook = [ExportHook()]
-        predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions), hooks = hook, yield_single_examples = False)
+        predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions), yield_single_examples = False)
+        # Debug version with hook: predict = self.__solver_.predict(input_fn = lambda: self.__PredictInputData(field, positions), hooks = hook, yield_single_examples = False)
         forecast = next(predict)
         np.savetxt("test.txt", forecast["probabilities"], fmt = "%.5f")
 
