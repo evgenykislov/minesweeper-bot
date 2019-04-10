@@ -42,16 +42,12 @@ emulator/\.idea/
 
 solvers/tetragonal_neural/\.idea/
 
-solvers/tetragonal_neural/data/
-
-emulator/data/
-
 emulator/__pycache__/
-
-*.txt
 
 bot/minesweeper_bot\.pro\.user
 
 build-minesweeper_bot-Desktop_Qt_5_10_0_GCC_64bit-Debug/
 
 *.user
+
+solvers/tetragonal_neural/__pycache__/
