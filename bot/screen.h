@@ -26,7 +26,7 @@ public:
   void MakeStep(unsigned int row, unsigned int col);
 
  private:
-  const unsigned int kCutMargin = 2;
+  const unsigned int kCutMargin = 0;
   QRect approx_field_rect_;
   QRect field_rect_;
   unsigned int approx_row_amount_;

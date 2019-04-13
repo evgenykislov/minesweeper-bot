@@ -7,7 +7,7 @@
 #include <QTimer>
 
 #include "screen.h"
-#include "model_960_140_21_3.h"
+#include "models/tetragonal_neural.h"
 
 namespace Ui {
 class BotDialog;
@@ -52,7 +52,7 @@ class BotDialog : public QDialog
   std::unique_ptr<std::thread> hook_thread_;
   QPoint clicks_[kClickAmount];
   unsigned int click_index_;
-  Model_960_140_21_3 solver;
+  ModelTetragonalNeural solver;
 
   void CornersCancel();
   void MakeStep(const FieldType& field);
