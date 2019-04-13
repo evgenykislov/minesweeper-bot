@@ -1,8 +1,11 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 using namespace std;
+
+const size_t kInputSize = 960;
 
 
 void PrintHelp() {
@@ -48,8 +51,12 @@ void SaveFileWithValues(ofstream& stream, const char* values_file) {
 
 void SaveFirstKernelLayer(ofstream& stream, const char* values_file) {
   assert(values_file);
-  float readed[960][960];
-  float shifted[960][960];
+  using InputNodeWeights = float[kInputSize];
+  using InputMatrix = InputNodeWeights[kInputSize];
+  unique_ptr<InputNodeWeights[]> readed;
+  unique_ptr<InputNodeWeights[]> shifted;
+  readed.reset(new InputMatrix);
+  shifted.reset(new InputMatrix);
   ifstream input(values_file);
   if (!input) {
     return;
@@ -94,7 +101,7 @@ void SaveFirstKernelLayer(ofstream& stream, const char* values_file) {
       }
     }
   }
-  stream.write(reinterpret_cast<const char*>(shifted), sizeof(shifted));
+  stream.write(reinterpret_cast<const char*>(shifted.get()), sizeof(InputMatrix));
 }
 
 void CheckDataSize(ofstream& stream, size_t right_size) {
@@ -134,8 +141,9 @@ int main(int argc, char** argv)
       throw std::runtime_error("error in file operation");
     }
   }
-  catch (exception&) {
+  catch (exception& e) {
     cerr << "Error in forming output pack file" << endl;
+    cerr << "  description: " << e.what() << endl;
     return 1;
   }
   cout << "Success" << endl;
