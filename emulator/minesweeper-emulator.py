@@ -198,9 +198,9 @@ class MineField:
 sweeper = miner_dnn.TensorFlowSweeper()
 print("Minesweeper bot emulator. Evgeny Kislov, 2019")
 print("Commands:")
-print("1 - Train model and check it")
-print("2 - Check model only")
-print("3 - Export model parameters")
+print("1 - Train model")
+print("2 - Check model")
+print("3 - Export model parameters and test field ' .*012345678'")
 print("0 - Exit")
 answer = input("Select command [1/2/3/0]:")
 # Model training
@@ -222,7 +222,7 @@ if answer == '1':
             #     print("    Field ", f, ": death ", field.GetDeathAmount(), " step ", field.GetCurrentStep(), sep='')
         print("Field ", f, " de-mined with ", field.GetDeathAmount(), " death", sep='')
 # Model checking
-if answer == '1' or answer == '2':
+if answer == '2':
     # Checking of AI
     files = [f for f in os.listdir('.') if (os.path.isfile(f) and len(f) >= 5 and f[0] == "c" and f[-4:] == ".txt")]
     for f in files:
@@ -247,3 +247,8 @@ if answer == '1' or answer == '2':
 # Model export
 if answer == '3':
     sweeper.ExportModelParameters()
+    # Output test information
+    view = []
+    view.append([' ', '.', '*', '0', '1', '2', '3', '4', '5', '6', '7', '8'])
+    sweeper.ExportProbabilities(view)
+

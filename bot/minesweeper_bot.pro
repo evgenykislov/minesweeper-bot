@@ -28,13 +28,15 @@ SOURCES += \
     botdialog.cpp \
     screen.cpp \
     celltypedialog.cpp \
-    dnnclassifier.cpp
+    models/classifier.cpp \
+    models/tetragonal_neural.cpp
 
 HEADERS += \
     botdialog.h \
     screen.h \
     celltypedialog.h \
-    dnnclassifier.h
+    models/classifier.h \
+    models/tetragonal_neural.h
 
 FORMS += \
     botdialog.ui \

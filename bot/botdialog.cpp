@@ -2,6 +2,7 @@
 #include <mutex>
 
 #include <QDesktopWidget>
+#include <QFile>
 
 #include <uiohook.h>
 
@@ -44,6 +45,14 @@ BotDialog::BotDialog(QWidget *parent)
     emit DoClickPosition(xpos, ypos);
   };
   hook_set_dispatch_proc(HookHandle);
+
+  QFile model_file("model.bin");
+  if (model_file.open(QIODevice::ReadOnly)) {
+    QByteArray byte_data = model_file.readAll();
+    model_file.close();
+    vector<uint8_t> vect_data((uint8_t*)(byte_data.data()), (uint8_t*)(byte_data.data() + byte_data.size()));
+    solver.LoadModel(std::move(vect_data));
+  }
 }
 
 BotDialog::~BotDialog()
@@ -103,12 +112,16 @@ void BotDialog::CornersCancel() {
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
-  static size_t step_index = 0;
-  if (step_index >= field[0].size()) {
-    step_index = 0;
+  unsigned int row;
+  unsigned int col;
+  bool sure_step;
+  try {
+    solver.GetStep(field, row, col, sure_step);
+    scr_.MakeStep(row, col);
   }
-  scr_.MakeStep(0, step_index);
-  ++step_index;
+  catch (exception&) {
+    // TODO Can't make a step
+  }
 }
 
 void BotDialog::ShowUnknownImages() {
