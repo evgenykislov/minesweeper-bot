@@ -29,14 +29,16 @@ SOURCES += \
     screen.cpp \
     celltypedialog.cpp \
     models/classifier.cpp \
-    models/tetragonal_neural.cpp
+    models/tetragonal_neural.cpp \
+    lineeditwfocus.cpp
 
 HEADERS += \
     botdialog.h \
     screen.h \
     celltypedialog.h \
     models/classifier.h \
-    models/tetragonal_neural.h
+    models/tetragonal_neural.h \
+    lineeditwfocus.h
 
 FORMS += \
     botdialog.ui \
@@ -47,4 +49,6 @@ RESOURCES +=
 unix:!macx: LIBS += -L/usr/local/lib/ -luiohook -lfakeInput
 
 INCLUDEPATH += /usr/local/include
+INCLUDEPATH += $$PWD
+
 DEPENDPATH += /usr/local/include

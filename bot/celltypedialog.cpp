@@ -43,9 +43,9 @@ char CellTypeDialog::GetCellType() {
 
 void CellTypeDialog::OnSelectType() {
   auto sender_btn = sender();
-  if (sender_btn == ui->closed_btn_) { cell_type_ = ' '; }
-  else if (sender_btn == ui->bomb_btn_) { cell_type_ = '/'; }
-  else if (sender_btn == ui->out_btn_) { cell_type_ = '/'; }
+  if (sender_btn == ui->closed_btn_) { cell_type_ = '.'; }
+  else if (sender_btn == ui->bomb_btn_) { cell_type_ = '*'; }
+  else if (sender_btn == ui->out_btn_) { cell_type_ = ' '; }
   else if (sender_btn == ui->a0_btn_) { cell_type_ = '0'; }
   else if (sender_btn == ui->a1_btn_) { cell_type_ = '1'; }
   else if (sender_btn == ui->a2_btn_) { cell_type_ = '2'; }

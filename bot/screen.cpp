@@ -33,6 +33,12 @@ void BotScreen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   RefineRect();
 }
 
+void BotScreen::MoveField(int move_horizontal, int move_vertical) {
+  approx_field_rect_ = field_rect_;
+  approx_field_rect_.moveTo(field_rect_.left() + move_horizontal, field_rect_.top() + move_vertical);
+  RefineRect();
+}
+
 void BotScreen::SetScreenID(int id) {
   screen_id_ = id;
 }
@@ -52,6 +58,20 @@ bool BotScreen::GetField(FieldType& field
     return false;
   }
   field = field_;
+  return true;
+}
+
+bool BotScreen::GetImageByPosition(unsigned int row, unsigned int col, QImage& image) {
+  QScreen *screen = QGuiApplication::primaryScreen();
+  if (!screen) { return false; }
+  auto pixmap = screen->grabWindow(0);
+  auto field = pixmap.copy(field_rect_);
+  if (field.size() != field_rect_.size()) { return false; }
+  if (cell_height_ == 0 || cell_width_ == 0) { return false; }
+  image = field.copy(col * cell_width_ + kCutMargin
+    , row * cell_height_ + kCutMargin
+    , cell_width_ - 2 * kCutMargin
+    , cell_height_ - 2 * kCutMargin).toImage();
   return true;
 }
 

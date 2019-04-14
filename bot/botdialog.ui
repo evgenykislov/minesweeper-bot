@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>591</width>
     <height>300</height>
    </rect>
   </property>
@@ -68,7 +68,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QLineEdit" name="row_edt_">
+  <widget class="LineEditWFocus" name="row_edt_">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -78,7 +78,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QLineEdit" name="col_edt_">
+  <widget class="LineEditWFocus" name="col_edt_">
    <property name="geometry">
     <rect>
      <x>160</x>
@@ -110,8 +110,168 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QLabel" name="cell_top_left_">
+   <property name="geometry">
+    <rect>
+     <x>370</x>
+     <y>60</y>
+     <width>64</width>
+     <height>64</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cell_bottom_left_">
+   <property name="geometry">
+    <rect>
+     <x>390</x>
+     <y>180</y>
+     <width>64</width>
+     <height>64</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cell_top_right_">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>90</y>
+     <width>64</width>
+     <height>64</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cell_bottom_right_">
+   <property name="geometry">
+    <rect>
+     <x>500</x>
+     <y>200</y>
+     <width>64</width>
+     <height>64</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>130</y>
+     <width>62</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Rows</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>130</y>
+     <width>62</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Columns</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>130</y>
+     <width>62</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Mines</string>
+   </property>
+  </widget>
+  <widget class="LineEditWFocus" name="mines_edt_">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>150</y>
+     <width>113</width>
+     <height>28</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="to_left_btn_">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>220</y>
+     <width>31</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="to_right_btn_">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>220</y>
+     <width>31</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="to_top_btn_">
+   <property name="geometry">
+    <rect>
+     <x>450</x>
+     <y>10</y>
+     <width>21</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="to_bottom_btn_">
+   <property name="geometry">
+    <rect>
+     <x>450</x>
+     <y>50</y>
+     <width>21</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>LineEditWFocus</class>
+   <extends>QLineEdit</extends>
+   <header>lineeditwfocus.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>
@@ -162,10 +322,78 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>to_left_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnLeftField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>245</x>
+     <y>233</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_right_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnRightField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>285</x>
+     <y>233</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_top_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnTopField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>460</x>
+     <y>23</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_bottom_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnBottomField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>460</x>
+     <y>63</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnCornersBtn()</slot>
   <slot>OnRun()</slot>
   <slot>OnImageClick()</slot>
+  <slot>OnTopField()</slot>
+  <slot>OnBottomField()</slot>
+  <slot>OnLeftField()</slot>
+  <slot>OnRightField()</slot>
  </slots>
 </ui>

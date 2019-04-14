@@ -3,6 +3,7 @@
 
 #include <QDesktopWidget>
 #include <QFile>
+#include <QPainter>
 
 #include <uiohook.h>
 
@@ -41,6 +42,9 @@ BotDialog::BotDialog(QWidget *parent)
   ui_->CornersLbl->hide();
   connect(&timer_200ms_, &QTimer::timeout, this, &BotDialog::TimerTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
+  connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
+  connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
+  connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   hook_lambda_ = [this](int xpos, int ypos) {
     emit DoClickPosition(xpos, ypos);
   };
@@ -88,18 +92,87 @@ void BotDialog::CornersCompleted(QRect frame) {
     scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
     scr_.SetApproximatelyRect(frame);
     state_ = kSizeModification;
+    ShowCornerImages();
   }
+}
+
+void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
+  // Scale the image to given size
+  auto scaled_image = image.scaled(kImageSize, kImageSize, Qt::KeepAspectRatio);
+  QImage border_image(kImageSizeWithBorder, kImageSizeWithBorder, QImage::Format_RGB888);
+  QPainter painter;
+  painter.begin(&border_image);
+  painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+  painter.setPen(border_linecolor);
+  painter.fillRect(border_image.rect(), border_backcolor);
+  for (int y = -kImageSizeWithBorder; y < kImageSizeWithBorder; y += border_line_step) {
+    painter.drawLine(0, y, kImageSizeWithBorder, y + kImageSizeWithBorder);
+  }
+  assert(kImageSizeWithBorder >= kImageSize);
+  unsigned int border_width = (kImageSizeWithBorder - kImageSize) / 2;
+  painter.drawImage(QPointF(border_width, border_width), scaled_image);
+  painter.end();
+  pixels = QPixmap::fromImage(border_image);
+}
+
+void BotDialog::ShowCornerImages() {
+  auto row_amount = ui_->row_edt_->text().toUInt();
+  auto col_amount = ui_->col_edt_->text().toUInt();
+  QImage top_left;
+  QPixmap top_left_pixel;
+  scr_.GetImageByPosition(0, 0, top_left);
+  FormImage(top_left, top_left_pixel);
+  ui_->cell_top_left_->setPixmap(top_left_pixel);
+  QImage top_right;
+  QPixmap top_right_pixel;
+  scr_.GetImageByPosition(0, col_amount - 1, top_right);
+  FormImage(top_left, top_left_pixel);
+  ui_->cell_top_right_->setPixmap(top_left_pixel);
+  QImage bottom_left;
+  QPixmap bottom_left_pixel;
+  scr_.GetImageByPosition(row_amount - 1, 0, bottom_left);
+  FormImage(bottom_left, bottom_left_pixel);
+  ui_->cell_bottom_left_->setPixmap(bottom_left_pixel);
+  QImage bottom_right;
+  QPixmap bottom_right_pixel;
+  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right);
+  FormImage(bottom_left, bottom_right_pixel);
+  ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
 }
 
 void BotDialog::OnRun() {
   if (state_ != kSizeModification) {
     return;
   }
+  state_ = kRun;
+  timer_200ms_.start(kTimerInterval);
+}
+
+void BotDialog::LoseFocus() {
   auto row_amount = ui_->row_edt_->text().toUInt();
   auto col_amount = ui_->col_edt_->text().toUInt();
   scr_.SetFieldSize(row_amount, col_amount);
-  state_ = kRun;
-  timer_200ms_.start(kTimerInterval);
+  ShowCornerImages();
+}
+
+void BotDialog::OnLeftField() {
+  scr_.MoveField(-1, 0);
+  ShowCornerImages();
+}
+
+void BotDialog::OnRightField() {
+  scr_.MoveField(1, 0);
+  ShowCornerImages();
+}
+
+void BotDialog::OnTopField() {
+  scr_.MoveField(0, -1);
+  ShowCornerImages();
+}
+
+void BotDialog::OnBottomField() {
+  scr_.MoveField(0, 1);
+  ShowCornerImages();
 }
 
 void BotDialog::CornersCancel() {

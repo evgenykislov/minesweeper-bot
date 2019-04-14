@@ -14,6 +14,7 @@ public:
 
   void SetApproximatelyRect(const QRect& rect);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
+  void MoveField(int move_horizontal, int move_vertical);
   void SetScreenID(int id);
 
   bool GetField(FieldType& field
@@ -21,6 +22,7 @@ public:
     , bool& field_undetected
     , bool& game_over
     , bool& unknown_images);
+  bool GetImageByPosition(unsigned int row, unsigned int col, QImage& image);
   void GetUnknownImages(std::list<QImage>& images);
   void SetImageType(const QImage& image, char cell_type);
   void MakeStep(unsigned int row, unsigned int col);
