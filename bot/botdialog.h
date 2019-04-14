@@ -28,6 +28,10 @@ class BotDialog : public QDialog
   void OnCornersBtn();
   void OnRun();
   void LoseFocus();
+  void OnLeftField();
+  void OnRightField();
+  void OnTopField();
+  void OnBottomField();
 
  private:
   enum {

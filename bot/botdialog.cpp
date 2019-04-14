@@ -155,6 +155,26 @@ void BotDialog::LoseFocus() {
   ShowCornerImages();
 }
 
+void BotDialog::OnLeftField() {
+  scr_.MoveField(-1, 0);
+  ShowCornerImages();
+}
+
+void BotDialog::OnRightField() {
+  scr_.MoveField(1, 0);
+  ShowCornerImages();
+}
+
+void BotDialog::OnTopField() {
+  scr_.MoveField(0, -1);
+  ShowCornerImages();
+}
+
+void BotDialog::OnBottomField() {
+  scr_.MoveField(0, 1);
+  ShowCornerImages();
+}
+
 void BotDialog::CornersCancel() {
   timer_200ms_.stop();
   if (hook_thread_ && hook_thread_->joinable()) {

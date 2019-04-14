@@ -33,6 +33,12 @@ void BotScreen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   RefineRect();
 }
 
+void BotScreen::MoveField(int move_horizontal, int move_vertical) {
+  approx_field_rect_ = field_rect_;
+  approx_field_rect_.moveTo(field_rect_.left() + move_horizontal, field_rect_.top() + move_vertical);
+  RefineRect();
+}
+
 void BotScreen::SetScreenID(int id) {
   screen_id_ = id;
 }
