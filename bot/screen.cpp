@@ -22,6 +22,10 @@ BotScreen::BotScreen()
 {
 }
 
+BotScreen::~BotScreen() {
+
+}
+
 void BotScreen::SetApproximatelyRect(const QRect& rect) {
   approx_field_rect_ = rect;
   RefineRect();
@@ -81,10 +85,7 @@ void BotScreen::GetUnknownImages(std::list<QImage>& images) {
 }
 
 void BotScreen::SetImageType(const QImage& image, char cell_type) {
-  CellInfo info;
-  info.cell_image_ = image;
-  info.cell_type_ = cell_type;
-  cells_storage_.push_back(info);
+  storage_.SetImageState(cell_type, image);
 }
 
 void BotScreen::MakeStep(unsigned int row, unsigned int col) {
@@ -124,15 +125,10 @@ void BotScreen::ProcessScreen() {
         , cell_width_ - 2 * kCutMargin
         , cell_height_ - 2 * kCutMargin).toImage();
       // Find cell type
-      bool cell_found = false;
-      for (auto& info: cells_storage_) {
-        if (info.cell_image_ == cell) {
-          cell_found  =true;
-          field_[row_index][col_index] = info.cell_type_;
-          break;
-        }
+      if (storage_.GetStateByImage(cell, field_[row_index][col_index])) {
+        continue;
       }
-      if (cell_found) continue;
+      bool cell_found = false;
       for (auto& image: unknown_images_) {
         if (image == cell) {
           cell_found = true;

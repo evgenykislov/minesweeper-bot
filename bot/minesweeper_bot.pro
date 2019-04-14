@@ -30,7 +30,8 @@ SOURCES += \
     celltypedialog.cpp \
     models/classifier.cpp \
     models/tetragonal_neural.cpp \
-    lineeditwfocus.cpp
+    lineeditwfocus.cpp \
+    imagesstorage.cpp
 
 HEADERS += \
     botdialog.h \
@@ -38,7 +39,8 @@ HEADERS += \
     celltypedialog.h \
     models/classifier.h \
     models/tetragonal_neural.h \
-    lineeditwfocus.h
+    lineeditwfocus.h \
+    imagesstorage.h
 
 FORMS += \
     botdialog.ui \

@@ -5,12 +5,16 @@
 #include <list>
 
 #include <QPixmap>
+
+#include "imagesstorage.h"
+
 using FieldType = std::vector<std::vector<char>>;
 
 class BotScreen
 {
 public:
   BotScreen();
+  virtual ~BotScreen();
 
   void SetApproximatelyRect(const QRect& rect);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
@@ -28,6 +32,11 @@ public:
   void MakeStep(unsigned int row, unsigned int col);
 
  private:
+  BotScreen(const BotScreen&) = delete;
+  BotScreen(BotScreen&&) = delete;
+  BotScreen& operator=(const BotScreen&) = delete;
+  BotScreen& operator=(BotScreen&&) = delete;
+
   const unsigned int kCutMargin = 0;
   QRect approx_field_rect_;
   QRect field_rect_;
@@ -47,14 +56,9 @@ public:
   void RefineRect();
   void ClearField();
 
-  struct CellInfo {
-    QImage cell_image_;
-    char cell_type_;
-  };
-
-  std::vector<CellInfo> cells_storage_;
   std::vector<std::vector<char>> field_;
   int screen_id_;
+  ImagesStorage storage_;
 };
 
 #endif // SCREEN_H
