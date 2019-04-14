@@ -1,4 +1,5 @@
 #include <cassert>
+#include <chrono>
 #include <mutex>
 
 #include <QDesktopWidget>
@@ -12,6 +13,7 @@
 #include "ui_botdialog.h"
 
 using namespace std;
+using namespace std::chrono;
 
 function<void(int xpos, int ypos)> hook_lambda_;
 
@@ -32,7 +34,8 @@ void HookHandle(uiohook_event* const event) {
 
 BotDialog::BotDialog(QWidget *parent)
   : QDialog(parent)
-  , state_(kIdle)
+  , corners_defined_(false)
+  , measures_defined_(false)
   , ui_(new Ui::BotDialog)
   , corners_interval_(0)
   , click_index_(0)
@@ -40,7 +43,8 @@ BotDialog::BotDialog(QWidget *parent)
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
-  connect(&timer_200ms_, &QTimer::timeout, this, &BotDialog::TimerTick, Qt::QueuedConnection);
+  connect(&corners_timer_, &QTimer::timeout, this, &BotDialog::CornersTick, Qt::QueuedConnection);
+  connect(&game_timer_, &QTimer::timeout, this, &BotDialog::GameTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -77,23 +81,20 @@ void BotDialog::OnCornersBtn() {
       hook_run();
     }));
     corners_interval_ = 0;
-    timer_200ms_.start(kTimerInterval);
-    state_ = kCornersSelection;
+    corners_timer_.start(kTimerInterval);
   }
   catch (exception&) {
-    state_ = kIdle;
-    timer_200ms_.stop();
+    corners_defined_ = false;
+    corners_timer_.stop();
   }
 }
 
 void BotDialog::CornersCompleted(QRect frame) {
   CornersCancel();
-  if (state_ == kCornersSelection) {
-    scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-    scr_.SetApproximatelyRect(frame);
-    state_ = kSizeModification;
-    ShowCornerImages();
-  }
+  corners_defined_ = true;
+  scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
+  scr_.SetApproximatelyRect(frame);
+  ShowCornerImages();
 }
 
 void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
@@ -140,19 +141,25 @@ void BotDialog::ShowCornerImages() {
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
 }
 
+void BotDialog::StopGame() {
+  game_timer_.stop();
+}
+
 void BotDialog::OnRun() {
-  if (state_ != kSizeModification) {
+  if (!corners_defined_ || !measures_defined_) {
+    // TODO inform user about
     return;
   }
-  state_ = kRun;
-  timer_200ms_.start(kTimerInterval);
+  game_timer_.start(kTimerInterval);
 }
 
 void BotDialog::LoseFocus() {
   auto row_amount = ui_->row_edt_->text().toUInt();
   auto col_amount = ui_->col_edt_->text().toUInt();
+  auto mines_amount = ui_->mines_edt_->text().toUInt();
   scr_.SetFieldSize(row_amount, col_amount);
   ShowCornerImages();
+  measures_defined_ = row_amount > 0 && col_amount > 0 && mines_amount > 0;
 }
 
 void BotDialog::OnLeftField() {
@@ -176,7 +183,8 @@ void BotDialog::OnBottomField() {
 }
 
 void BotDialog::CornersCancel() {
-  timer_200ms_.stop();
+  corners_defined_ = false;
+  corners_timer_.stop();
   if (hook_thread_ && hook_thread_->joinable()) {
     hook_stop();
     hook_thread_->join();
@@ -185,12 +193,21 @@ void BotDialog::CornersCancel() {
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
+  static size_t step_counter = 0;
   unsigned int row;
   unsigned int col;
   bool sure_step;
   try {
+    auto step_start = steady_clock::now();
     solver.GetStep(field, row, col, sure_step);
+    auto before_make_step = steady_clock::now();
     scr_.MakeStep(row, col);
+    auto after_step = steady_clock::now();
+    duration<double> calc_time = before_make_step - step_start;
+    duration<double> mouse_time = after_step - before_make_step;
+    ++step_counter;
+    auto debug_message = QString::fromUtf8(u8"Step: %1, Intervals: %2 + %3").arg(step_counter).arg(calc_time.count()).arg(mouse_time.count());
+    ui_->debug_lbl_->setText(debug_message);
   }
   catch (exception&) {
     // TODO Can't make a step
@@ -205,15 +222,13 @@ void BotDialog::ShowUnknownImages() {
 
 void BotDialog::UpdateUnknownImages() {
   if (unknown_images_.empty()) {
-    // Run the gaming
-    state_ = kRun;
-    timer_200ms_.start(kTimerInterval);
     return;
   }
-  CellTypeDialog dlg;
+  CellTypeDialog dlg(this);
   dlg.SetImage(unknown_images_.front());
   if (dlg.exec() == QDialog::Rejected) {
-    // Nothing to do. Wait for ...
+    unknown_images_.clear();
+    StopGame();
     return;
   }
   scr_.SetImageType(unknown_images_.front(), dlg.GetCellType());
@@ -221,43 +236,41 @@ void BotDialog::UpdateUnknownImages() {
   UpdateUnknownImages();
 }
 
-void BotDialog::TimerTick() {
-  if (state_ == kCornersSelection) {
-    corners_interval_ += kTimerInterval;
-    if (corners_interval_ >= kCornersTimeout) {
-      CornersCancel();
-      state_ = kIdle;
-      return;
-    }
-    int progress = int(double(corners_interval_) / kCornersTimeout * kProgressScale);
-    ui_->CornersBar->setValue(progress);
+void BotDialog::CornersTick() {
+  corners_interval_ += kTimerInterval;
+  if (corners_interval_ >= kCornersTimeout) {
+    CornersCancel();
     return;
   }
-  if (state_ == kRun) {
-    FieldType field;
-    bool no_screen;
-    bool no_field;
-    bool game_over;
-    bool unknown_images;
-    auto valid_field = scr_.GetField(field, no_screen, no_field, game_over, unknown_images);
-    if (valid_field) {
-      MakeStep(field);
-      return;
-    }
-    timer_200ms_.stop();
-    // There are some stoppers
-    if (no_screen || no_field) {
-      state_ = kIdle;
-      return;
-    }
-    if (game_over) {
-      state_ = kIdle;
-      return;
-    }
-    if (unknown_images) {
-      state_ = kWaitForImageRecognition;
-      ShowUnknownImages();
-    }
+  int progress = int(double(corners_interval_) / kCornersTimeout * kProgressScale);
+  ui_->CornersBar->setValue(progress);
+}
+
+void BotDialog::GameTick() {
+  if (!unknown_images_.empty()) {
+    return;
+  }
+  FieldType field;
+  bool no_screen;
+  bool no_field;
+  bool game_over;
+  bool unknown_images;
+  auto valid_field = scr_.GetField(field, no_screen, no_field, game_over, unknown_images);
+  if (valid_field) {
+    MakeStep(field);
+    return;
+  }
+  // There are some stoppers
+  if (no_screen || no_field) {
+    StopGame();
+    return;
+  }
+  if (game_over) {
+    StopGame();
+    return;
+  }
+  if (unknown_images) {
+    ShowUnknownImages();
   }
 }
 

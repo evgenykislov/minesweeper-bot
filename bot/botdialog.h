@@ -41,13 +41,8 @@ class BotDialog : public QDialog
     kClickAmount = 2,
   };
 
-  enum SettingState {
-    kIdle,
-    kCornersSelection,
-    kSizeModification,
-    kRun,
-    kWaitForImageRecognition,
-  } state_;
+  bool corners_defined_;
+  bool measures_defined_;
 
   const unsigned int kImageSize = 48;
   const unsigned int kImageSizeWithBorder = 64;
@@ -57,7 +52,8 @@ class BotDialog : public QDialog
 
 
   Ui::BotDialog* ui_;
-  QTimer timer_200ms_;
+  QTimer corners_timer_; // Timer for waiting user selects corners
+  QTimer game_timer_; // Timer for making game steps
   size_t corners_interval_;
   BotScreen scr_;
   std::list<QImage> unknown_images_;
@@ -73,9 +69,11 @@ class BotDialog : public QDialog
   void CornersCompleted(QRect frame);
   void FormImage(const QImage& image, QPixmap& pixels);
   void ShowCornerImages();
+  void StopGame();
 
  private slots:
-  void TimerTick();
+  void CornersTick();
+  void GameTick();
   void OnClickPosition(int xpos, int ypos);
 };
 
