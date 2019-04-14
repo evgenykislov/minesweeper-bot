@@ -55,6 +55,7 @@ void CellTypeDialog::OnSelectType() {
   else if (sender_btn == ui->a6_btn_) { cell_type_ = '6'; }
   else if (sender_btn == ui->a7_btn_) { cell_type_ = '7'; }
   else if (sender_btn == ui->a8_btn_) { cell_type_ = '8'; }
+  else if (sender_btn == ui->death_btn_) { cell_type_ = 'x'; }
   else {
     assert(0);
   }  emit accept();

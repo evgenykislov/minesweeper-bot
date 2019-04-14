@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>427</width>
-    <height>129</height>
+    <height>166</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -140,7 +140,7 @@
     </rect>
    </property>
    <property name="text">
-    <string> </string>
+    <string/>
    </property>
   </widget>
   <widget class="QPushButton" name="bomb_btn_">
@@ -200,12 +200,12 @@
     <rect>
      <x>150</x>
      <y>60</y>
-     <width>41</width>
+     <width>91</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Bomb</string>
+    <string>Mark &quot;Bomb&quot;</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_3">
@@ -224,14 +224,40 @@
   <widget class="QLabel" name="cell_img_">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>30</y>
+     <x>10</x>
+     <y>10</y>
      <width>64</width>
      <height>64</height>
     </rect>
    </property>
    <property name="text">
     <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>140</y>
+     <width>91</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Bomb (Death)</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="death_btn_">
+   <property name="geometry">
+    <rect>
+     <x>110</x>
+     <y>130</y>
+     <width>32</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>x</string>
    </property>
   </widget>
  </widget>
@@ -442,6 +468,22 @@
     <hint type="destinationlabel">
      <x>250</x>
      <y>124</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>death_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>CellTypeDialog</receiver>
+   <slot>OnSelectType()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>125</x>
+     <y>145</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>213</x>
+     <y>82</y>
     </hint>
    </hints>
   </connection>
