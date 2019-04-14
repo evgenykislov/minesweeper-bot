@@ -21,6 +21,7 @@ public:
     , bool& field_undetected
     , bool& game_over
     , bool& unknown_images);
+  bool GetImageByPosition(unsigned int row, unsigned int col, QImage& image);
   void GetUnknownImages(std::list<QImage>& images);
   void SetImageType(const QImage& image, char cell_type);
   void MakeStep(unsigned int row, unsigned int col);

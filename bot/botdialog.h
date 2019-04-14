@@ -27,6 +27,7 @@ class BotDialog : public QDialog
  public slots:
   void OnCornersBtn();
   void OnRun();
+  void LoseFocus();
 
  private:
   enum {
@@ -44,6 +45,13 @@ class BotDialog : public QDialog
     kWaitForImageRecognition,
   } state_;
 
+  const unsigned int kImageSize = 48;
+  const unsigned int kImageSizeWithBorder = 64;
+  const QColor border_backcolor = QColor(192, 192, 192);
+  const QColor border_linecolor = QColor(0, 0, 0);
+  const int border_line_step = 4;
+
+
   Ui::BotDialog* ui_;
   QTimer timer_200ms_;
   size_t corners_interval_;
@@ -59,6 +67,8 @@ class BotDialog : public QDialog
   void ShowUnknownImages();
   void UpdateUnknownImages();
   void CornersCompleted(QRect frame);
+  void FormImage(const QImage& image, QPixmap& pixels);
+  void ShowCornerImages();
 
  private slots:
   void TimerTick();

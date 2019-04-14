@@ -55,6 +55,20 @@ bool BotScreen::GetField(FieldType& field
   return true;
 }
 
+bool BotScreen::GetImageByPosition(unsigned int row, unsigned int col, QImage& image) {
+  QScreen *screen = QGuiApplication::primaryScreen();
+  if (!screen) { return false; }
+  auto pixmap = screen->grabWindow(0);
+  auto field = pixmap.copy(field_rect_);
+  if (field.size() != field_rect_.size()) { return false; }
+  if (cell_height_ == 0 || cell_width_ == 0) { return false; }
+  image = field.copy(col * cell_width_ + kCutMargin
+    , row * cell_height_ + kCutMargin
+    , cell_width_ - 2 * kCutMargin
+    , cell_height_ - 2 * kCutMargin).toImage();
+  return true;
+}
+
 void BotScreen::GetUnknownImages(std::list<QImage>& images) {
   images.swap(unknown_images_);
   unknown_images_.clear();
