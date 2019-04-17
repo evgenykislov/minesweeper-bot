@@ -61,6 +61,12 @@ class BotDialog : public QDialog
   QPoint clicks_[kClickAmount];
   unsigned int click_index_;
   ModelTetragonalNeural solver;
+  // Step variables
+  size_t step_counter_;
+  FieldType step_field_;
+  unsigned int step_row_;
+  unsigned int step_column_;
+  bool step_success_;
 
   void CornersCancel();
   void MakeStep(const FieldType& field);
@@ -70,6 +76,7 @@ class BotDialog : public QDialog
   void FormImage(const QImage& image, QPixmap& pixels);
   void ShowCornerImages();
   void StopGame();
+  void SaveStep();
 
  private slots:
   void CornersTick();

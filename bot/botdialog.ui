@@ -276,6 +276,19 @@
     <string>TextLabel</string>
    </property>
   </widget>
+  <widget class="QCheckBox" name="save_steps_chk_">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>250</y>
+     <width>89</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save steps</string>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
