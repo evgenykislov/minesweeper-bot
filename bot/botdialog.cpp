@@ -1,6 +1,9 @@
 #include <cassert>
 #include <chrono>
+#include <fstream>
+#include <iomanip>
 #include <mutex>
+#include <sstream>
 
 #include <QDesktopWidget>
 #include <QFile>
@@ -39,6 +42,10 @@ BotDialog::BotDialog(QWidget *parent)
   , ui_(new Ui::BotDialog)
   , corners_interval_(0)
   , click_index_(0)
+  , step_counter_(0)
+  , step_row_(0)
+  , step_column_(0)
+  , step_success_(false)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
@@ -106,7 +113,7 @@ void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
   painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
   painter.setPen(border_linecolor);
   painter.fillRect(border_image.rect(), border_backcolor);
-  for (int y = -kImageSizeWithBorder; y < kImageSizeWithBorder; y += border_line_step) {
+  for (int y = -kImageSizeWithBorder; y < (int)kImageSizeWithBorder; y += border_line_step) {
     painter.drawLine(0, y, kImageSizeWithBorder, y + kImageSizeWithBorder);
   }
   assert(kImageSizeWithBorder >= kImageSize);
@@ -143,6 +150,38 @@ void BotDialog::ShowCornerImages() {
 
 void BotDialog::StopGame() {
   game_timer_.stop();
+}
+
+void BotDialog::SaveStep() {
+  // save field
+  stringstream field_filename;
+  field_filename << "field_" << setfill('0') << setw(5) << step_counter_ << ".txt";
+  ofstream field_file(field_filename.str(), ios_base::trunc);
+  if (!field_file) {
+    // TODO can't save
+    return;
+  }
+  for (auto row_iter = step_field_.begin(); row_iter != step_field_.end(); ++row_iter) {
+    for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
+      field_file << *col_iter;
+    }
+    field_file << endl;
+  }
+  if (!field_file) {
+    // TODO saving error
+    return;
+  }
+  field_file.close();
+  // Store predicted step
+  stringstream step_filename;
+  step_filename << "step_" << setfill('0') << setw(5) << step_counter_ << ".txt";
+  ofstream step_file(step_filename.str(), ios_base::trunc);
+  if (!step_file) {
+    // TODO can't save
+    return;
+  }
+  step_file << step_row_ << " " << step_column_ << " " << step_success_ << " " << field_filename.str() << endl;
+  step_file.close();
 }
 
 void BotDialog::OnRun() {
@@ -193,20 +232,22 @@ void BotDialog::CornersCancel() {
 }
 
 void BotDialog::MakeStep(const FieldType& field) {
-  static size_t step_counter = 0;
   unsigned int row;
   unsigned int col;
   bool sure_step;
+  ++step_counter_;
   try {
+    step_field_ = field;
     auto step_start = steady_clock::now();
     solver.GetStep(field, row, col, sure_step);
     auto before_make_step = steady_clock::now();
     scr_.MakeStep(row, col);
+    step_row_ = row;
+    step_column_ = col;
     auto after_step = steady_clock::now();
     duration<double> calc_time = before_make_step - step_start;
     duration<double> mouse_time = after_step - before_make_step;
-    ++step_counter;
-    auto debug_message = QString::fromUtf8(u8"Step: %1, Intervals: %2 + %3").arg(step_counter).arg(calc_time.count()).arg(mouse_time.count());
+    auto debug_message = QString::fromUtf8(u8"Step: %1, Intervals: %2 + %3").arg(step_counter_).arg(calc_time.count()).arg(mouse_time.count());
     ui_->debug_lbl_->setText(debug_message);
   }
   catch (exception&) {
@@ -257,6 +298,10 @@ void BotDialog::GameTick() {
   bool unknown_images;
   auto valid_field = scr_.GetField(field, no_screen, no_field, game_over, unknown_images);
   if (valid_field) {
+    step_success_ = true;
+    if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
+      SaveStep();
+    }
     MakeStep(field);
     return;
   }
@@ -266,6 +311,10 @@ void BotDialog::GameTick() {
     return;
   }
   if (game_over) {
+    step_success_ = false;
+    if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
+      SaveStep();
+    }
     StopGame();
     return;
   }
