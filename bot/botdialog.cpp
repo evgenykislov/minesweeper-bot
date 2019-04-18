@@ -37,11 +37,12 @@ void HookHandle(uiohook_event* const event) {
 
 BotDialog::BotDialog(QWidget *parent)
   : QDialog(parent)
-  , corners_defined_(false)
+  , top_left_corner_defined_(false)
+  , bottom_right_corner_defined_(false)
   , measures_defined_(false)
   , ui_(new Ui::BotDialog)
-  , corners_interval_(0)
-  , click_index_(0)
+  , pointing_interval_(0)
+  , pointing_target_(kEmptyTarget)
   , step_counter_(0)
   , step_row_(0)
   , step_column_(0)
@@ -50,7 +51,7 @@ BotDialog::BotDialog(QWidget *parent)
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
-  connect(&corners_timer_, &QTimer::timeout, this, &BotDialog::CornersTick, Qt::QueuedConnection);
+  connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(&game_timer_, &QTimer::timeout, this, &BotDialog::GameTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -72,35 +73,28 @@ BotDialog::BotDialog(QWidget *parent)
 
 BotDialog::~BotDialog()
 {
-  CornersCancel();
+  PointingCancel();
   hook_set_dispatch_proc(nullptr);
   hook_lambda_ = nullptr;
   delete ui_;
 }
 
 void BotDialog::OnCornersBtn() {
-  try {
-    CornersCancel();
-    // Start new corners request
-    assert(!hook_thread_);
-    click_index_ = 0;
-    hook_thread_.reset(new std::thread([](){
-      hook_run();
-    }));
-    corners_interval_ = 0;
-    corners_timer_.start(kTimerInterval);
-  }
-  catch (exception&) {
-    corners_defined_ = false;
-    corners_timer_.stop();
-  }
+  pointing_target_ = kTopLeftCorner;
+  StartPointing();
 }
 
-void BotDialog::CornersCompleted(QRect frame) {
-  CornersCancel();
-  corners_defined_ = true;
+void BotDialog::CornersCompleted() {
+  if (!top_left_corner_defined_ || !bottom_right_corner_defined_) {
+    return;
+  }
+  // Apply field frame
+  QRect rect;
+  rect.setTopLeft(top_left_corner_);
+  rect.setBottomRight(bottom_right_corner_);
+  rect.normalized();
   scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-  scr_.SetApproximatelyRect(frame);
+  scr_.SetApproximatelyRect(rect);
   ShowCornerImages();
 }
 
@@ -152,6 +146,10 @@ void BotDialog::StopGame() {
   game_timer_.stop();
 }
 
+void BotDialog::RestartGame() {
+  scr_.RestartGame();
+}
+
 void BotDialog::SaveStep() {
   // save field
   stringstream field_filename;
@@ -184,8 +182,25 @@ void BotDialog::SaveStep() {
   step_file.close();
 }
 
+void BotDialog::StartPointing() {
+  try {
+    PointingCancel();
+    // Start new corners request
+    assert(!hook_thread_);
+    assert(pointing_target_ != kEmptyTarget);
+    hook_thread_.reset(new std::thread([](){
+      hook_run();
+    }));
+    pointing_interval_ = 0;
+    pointing_timer_.start(kTimerInterval);
+  }
+  catch (exception&) {
+    PointingCancel();
+  }
+}
+
 void BotDialog::OnRun() {
-  if (!corners_defined_ || !measures_defined_) {
+  if (!top_left_corner_defined_ || !bottom_right_corner_defined_ || !measures_defined_) {
     // TODO inform user about
     return;
   }
@@ -221,9 +236,18 @@ void BotDialog::OnBottomField() {
   ShowCornerImages();
 }
 
-void BotDialog::CornersCancel() {
-  corners_defined_ = false;
-  corners_timer_.stop();
+void BotDialog::OnBottomRightCorner() {
+  pointing_target_ = kBottomRightCorner;
+  StartPointing();
+}
+
+void BotDialog::OnRestartPoint() {
+  pointing_target_ = kRestartButton;
+  StartPointing();
+}
+
+void BotDialog::PointingCancel() {
+  pointing_timer_.stop();
   if (hook_thread_ && hook_thread_->joinable()) {
     hook_stop();
     hook_thread_->join();
@@ -277,13 +301,13 @@ void BotDialog::UpdateUnknownImages() {
   UpdateUnknownImages();
 }
 
-void BotDialog::CornersTick() {
-  corners_interval_ += kTimerInterval;
-  if (corners_interval_ >= kCornersTimeout) {
-    CornersCancel();
+void BotDialog::PointingTick() {
+  pointing_interval_ += kTimerInterval;
+  if (pointing_interval_ >= kCornersTimeout) {
+    PointingCancel();
     return;
   }
-  int progress = int(double(corners_interval_) / kCornersTimeout * kProgressScale);
+  int progress = int(double(pointing_interval_) / kCornersTimeout * kProgressScale);
   ui_->CornersBar->setValue(progress);
 }
 
@@ -315,7 +339,7 @@ void BotDialog::GameTick() {
     if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
       SaveStep();
     }
-    StopGame();
+    RestartGame();
     return;
   }
   if (unknown_images) {
@@ -324,15 +348,24 @@ void BotDialog::GameTick() {
 }
 
 void BotDialog::OnClickPosition(int xpos, int ypos) {
-  if (click_index_ >= kClickAmount) {
-    return;
-  }
-  clicks_[click_index_] = QPoint(xpos, ypos);
-  ++click_index_;
-  if (click_index_ == kClickAmount) {
-    QRect rect;
-    rect.setTopLeft(clicks_[0]);
-    rect.setBottomRight(clicks_[1]);
-    CornersCompleted(rect.normalized());
+  PointingCancel();
+  QPoint point(xpos, ypos);
+  switch (pointing_target_) {
+    case kTopLeftCorner:
+      top_left_corner_ = point;
+      top_left_corner_defined_ = true;
+      CornersCompleted();
+      break;
+    case kBottomRightCorner:
+      bottom_right_corner_ = point;
+      bottom_right_corner_defined_ = true;
+      CornersCompleted();
+      break;
+    case kRestartButton:
+      restart_point_ = point;
+      scr_.SetRestartPoint(point);
+      break;
+    default:
+      assert(false);
   }
 }

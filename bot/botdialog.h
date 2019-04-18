@@ -32,6 +32,8 @@ class BotDialog : public QDialog
   void OnRightField();
   void OnTopField();
   void OnBottomField();
+  void OnBottomRightCorner();
+  void OnRestartPoint();
 
  private:
   enum {
@@ -41,7 +43,15 @@ class BotDialog : public QDialog
     kClickAmount = 2,
   };
 
-  bool corners_defined_;
+  enum PointingTarget {
+    kEmptyTarget,
+    kTopLeftCorner,
+    kBottomRightCorner,
+    kRestartButton,
+  };
+
+  bool top_left_corner_defined_;
+  bool bottom_right_corner_defined_;
   bool measures_defined_;
 
   const unsigned int kImageSize = 48;
@@ -52,14 +62,17 @@ class BotDialog : public QDialog
 
 
   Ui::BotDialog* ui_;
-  QTimer corners_timer_; // Timer for waiting user selects corners
+  QTimer pointing_timer_; // Timer for waiting user selects corners, restart point
   QTimer game_timer_; // Timer for making game steps
-  size_t corners_interval_;
+  size_t pointing_interval_;
   BotScreen scr_;
   std::list<QImage> unknown_images_;
   std::unique_ptr<std::thread> hook_thread_;
-  QPoint clicks_[kClickAmount];
-  unsigned int click_index_;
+  PointingTarget pointing_target_;
+  QPoint top_left_corner_;
+  QPoint bottom_right_corner_;
+  QPoint restart_point_;
+
   ModelTetragonalNeural solver;
   // Step variables
   size_t step_counter_;
@@ -68,18 +81,20 @@ class BotDialog : public QDialog
   unsigned int step_column_;
   bool step_success_;
 
-  void CornersCancel();
+  void PointingCancel();
   void MakeStep(const FieldType& field);
   void ShowUnknownImages();
   void UpdateUnknownImages();
-  void CornersCompleted(QRect frame);
+  void CornersCompleted();
   void FormImage(const QImage& image, QPixmap& pixels);
   void ShowCornerImages();
   void StopGame();
+  void RestartGame();
   void SaveStep();
+  void StartPointing();
 
  private slots:
-  void CornersTick();
+  void PointingTick();
   void GameTick();
   void OnClickPosition(int xpos, int ypos);
 };

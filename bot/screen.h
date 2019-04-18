@@ -17,6 +17,7 @@ public:
   virtual ~BotScreen();
 
   void SetApproximatelyRect(const QRect& rect);
+  void SetRestartPoint(const QPoint& point);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
   void MoveField(int move_horizontal, int move_vertical);
   void SetScreenID(int id);
@@ -30,6 +31,7 @@ public:
   void GetUnknownImages(std::list<QImage>& images);
   void SetImageType(const QImage& image, char cell_type);
   void MakeStep(unsigned int row, unsigned int col);
+  void RestartGame();
 
  private:
   BotScreen(const BotScreen&) = delete;
@@ -38,6 +40,7 @@ public:
   BotScreen& operator=(BotScreen&&) = delete;
 
   const unsigned int kCutMargin = 0;
+  const char kGameOverCell = 'x';
   QRect approx_field_rect_;
   QRect field_rect_;
   unsigned int approx_row_amount_;
@@ -48,6 +51,7 @@ public:
   bool field_undetected_;
   bool game_over_;
   std::list<QImage> unknown_images_;
+  QPoint restart_point_;
 
   int cell_width_;
   int cell_height_;
@@ -55,6 +59,7 @@ public:
   void ProcessScreen();
   void RefineRect();
   void ClearField();
+  void MakeClick(const QPoint& point);
 
   std::vector<std::vector<char>> field_;
   int screen_id_;

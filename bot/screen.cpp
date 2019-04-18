@@ -31,6 +31,10 @@ void BotScreen::SetApproximatelyRect(const QRect& rect) {
   RefineRect();
 }
 
+void BotScreen::SetRestartPoint(const QPoint& point) {
+  restart_point_ = point;
+}
+
 void BotScreen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   approx_row_amount_ = row_amount;
   approx_col_amount_ = col_amount;
@@ -93,12 +97,19 @@ void BotScreen::MakeStep(unsigned int row, unsigned int col) {
   int left = field_rect_.left() + col * cell_width_ + cell_width_ / 2;
   int top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
   QPoint point(left, top);
-  FakeInput::Mouse::moveTo(left, top);
-  FakeInput::Mouse::pressButton(FakeInput::Mouse_Left);
-  FakeInput::Mouse::releaseButton(FakeInput::Mouse_Left);
+  MakeClick(point);
+}
+
+void BotScreen::RestartGame() {
+  MakeClick(restart_point_);
 }
 
 void BotScreen::ProcessScreen() {
+  game_over_ = false;
+  screen_absent_ = false;
+  field_undetected_ = false;
+  unknown_images_.clear();
+
   QScreen *screen = QGuiApplication::primaryScreen();
   if (!screen) {
     screen_absent_ = true;
@@ -125,7 +136,12 @@ void BotScreen::ProcessScreen() {
         , cell_width_ - 2 * kCutMargin
         , cell_height_ - 2 * kCutMargin).toImage();
       // Find cell type
-      if (storage_.GetStateByImage(cell, field_[row_index][col_index])) {
+      char cell_type;
+      if (storage_.GetStateByImage(cell, cell_type)) {
+        if (cell_type == kGameOverCell) {
+          game_over_ = true;
+        }
+        field_[row_index][col_index] = cell_type;
         continue;
       }
       bool cell_found = false;
@@ -164,4 +180,10 @@ void BotScreen::ClearField() {
       field_[row_index][col_index] = ' ';
     }
   }
+}
+
+void BotScreen::MakeClick(const QPoint& point) {
+  FakeInput::Mouse::moveTo(point.x(), point.y());
+  FakeInput::Mouse::pressButton(FakeInput::Mouse_Left);
+  FakeInput::Mouse::releaseButton(FakeInput::Mouse_Left);
 }

@@ -289,6 +289,32 @@
     <string>Save steps</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="bottom_right_corner_btn_">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>40</y>
+     <width>83</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="restart_btn_">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>40</y>
+     <width>83</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushButton</string>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -412,6 +438,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>bottom_right_corner_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnBottomRightCorner()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>171</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>restart_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnRestartPoint()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>271</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnCornersBtn()</slot>
@@ -421,5 +479,7 @@
   <slot>OnBottomField()</slot>
   <slot>OnLeftField()</slot>
   <slot>OnRightField()</slot>
+  <slot>OnBottomRightCorner()</slot>
+  <slot>OnRestartPoint()</slot>
  </slots>
 </ui>
