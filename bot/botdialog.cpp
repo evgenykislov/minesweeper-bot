@@ -44,15 +44,13 @@ BotDialog::BotDialog(QWidget *parent)
   , pointing_interval_(0)
   , pointing_target_(kEmptyTarget)
   , step_counter_(0)
-  , step_row_(0)
-  , step_column_(0)
-  , step_success_(false)
+  , finish_gaming_(false)
+  , resume_gaming_(false)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
-  connect(&game_timer_, &QTimer::timeout, this, &BotDialog::GameTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -69,6 +67,11 @@ BotDialog::BotDialog(QWidget *parent)
     vector<uint8_t> vect_data((uint8_t*)(byte_data.data()), (uint8_t*)(byte_data.data() + byte_data.size()));
     solver.LoadModel(std::move(vect_data));
   }
+  // Start gaming thread
+  auto gaming_thread = new std::thread([this](){
+    Gaming();
+  });
+  gaming_thread_.reset(gaming_thread);
 }
 
 BotDialog::~BotDialog()
@@ -94,7 +97,7 @@ void BotDialog::CornersCompleted() {
   rect.setBottomRight(bottom_right_corner_);
   rect.normalized();
   scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-  scr_.SetApproximatelyRect(rect);
+  scr_.SetFrameRect(rect);
   ShowCornerImages();
 }
 
@@ -143,14 +146,12 @@ void BotDialog::ShowCornerImages() {
 }
 
 void BotDialog::StopGame() {
-  game_timer_.stop();
 }
 
 void BotDialog::RestartGame() {
-  scr_.RestartGame();
 }
 
-void BotDialog::SaveStep() {
+void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success) {
   // save field
   stringstream field_filename;
   field_filename << "field_" << setfill('0') << setw(5) << step_counter_ << ".txt";
@@ -159,7 +160,7 @@ void BotDialog::SaveStep() {
     // TODO can't save
     return;
   }
-  for (auto row_iter = step_field_.begin(); row_iter != step_field_.end(); ++row_iter) {
+  for (auto row_iter = field.begin(); row_iter != field.end(); ++row_iter) {
     for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
       field_file << *col_iter;
     }
@@ -178,7 +179,7 @@ void BotDialog::SaveStep() {
     // TODO can't save
     return;
   }
-  step_file << step_row_ << " " << step_column_ << " " << step_success_ << " " << field_filename.str() << endl;
+  step_file << step_row << " " << step_col << " " << success << " " << field_filename.str() << endl;
   step_file.close();
 }
 
@@ -199,12 +200,84 @@ void BotDialog::StartPointing() {
   }
 }
 
-void BotDialog::OnRun() {
-  if (!top_left_corner_defined_ || !bottom_right_corner_defined_ || !measures_defined_) {
-    // TODO inform user about
-    return;
+void BotDialog::Gaming() {
+  // Thread for gaming procedure
+
+  while (true) {
+    // Reset field to start
+    {
+      unique_lock<mutex> locker(gaming_lock_);
+      gaming_stopper_.wait(locker, [this](){
+        return finish_gaming_ || resume_gaming_;
+      });
+      if (finish_gaming_) {
+        break;
+      }
+      resume_gaming_ = false;
+    }
+    while (true) {
+      {
+        lock_guard<mutex> locker(gaming_lock_);
+        if (finish_gaming_) {
+          break;
+        }
+      }
+      // Get field
+      Field field;
+      bool game_over;
+      bool error_no_screen;
+      bool error_no_field;
+      bool error_unknown_images;
+      bool error_timeout;
+      scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
+      if (error_no_screen || error_no_field || error_unknown_images) {
+        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+        break;
+      }
+      if (game_over) {
+        emit DoGameOver();
+        break;
+      }
+
+      // Calculate new step
+      unsigned int row;
+      unsigned int col;
+      bool sure_step;
+      ++step_counter_;
+      solver.GetStep(field, row, col, sure_step);
+      // Detect wait, mouse move, etc
+
+      // Make step
+      scr_.MakeStep(row, col);
+      // Wait for update complete
+      Field next_field;
+      scr_.GetChangedField(next_field, field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
+      // Detect success
+      if (error_no_screen || error_no_field || error_unknown_images) {
+        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+        break;
+      }
+      // Save step with state
+      SaveStep(field, row, col, !game_over);
+      if (game_over) {
+        emit DoGameOver();
+        break;
+      }
+    }
   }
-  game_timer_.start(kTimerInterval);
+
+}
+
+void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_images) {
+
+}
+
+void BotDialog::OnRun() {
+  {
+    unique_lock<mutex> locker(gaming_lock_);
+    resume_gaming_ = true;
+    gaming_stopper_.notify_one();
+  }
 }
 
 void BotDialog::LoseFocus() {
@@ -255,30 +328,6 @@ void BotDialog::PointingCancel() {
   hook_thread_.reset();
 }
 
-void BotDialog::MakeStep(const FieldType& field) {
-  unsigned int row;
-  unsigned int col;
-  bool sure_step;
-  ++step_counter_;
-  try {
-    step_field_ = field;
-    auto step_start = steady_clock::now();
-    solver.GetStep(field, row, col, sure_step);
-    auto before_make_step = steady_clock::now();
-    scr_.MakeStep(row, col);
-    step_row_ = row;
-    step_column_ = col;
-    auto after_step = steady_clock::now();
-    duration<double> calc_time = before_make_step - step_start;
-    duration<double> mouse_time = after_step - before_make_step;
-    auto debug_message = QString::fromUtf8(u8"Step: %1, Intervals: %2 + %3").arg(step_counter_).arg(calc_time.count()).arg(mouse_time.count());
-    ui_->debug_lbl_->setText(debug_message);
-  }
-  catch (exception&) {
-    // TODO Can't make a step
-  }
-}
-
 void BotDialog::ShowUnknownImages() {
   scr_.GetUnknownImages(unknown_images_);
   assert(!unknown_images_.empty());
@@ -309,42 +358,6 @@ void BotDialog::PointingTick() {
   }
   int progress = int(double(pointing_interval_) / kCornersTimeout * kProgressScale);
   ui_->CornersBar->setValue(progress);
-}
-
-void BotDialog::GameTick() {
-  if (!unknown_images_.empty()) {
-    return;
-  }
-  FieldType field;
-  bool no_screen;
-  bool no_field;
-  bool game_over;
-  bool unknown_images;
-  auto valid_field = scr_.GetField(field, no_screen, no_field, game_over, unknown_images);
-  if (valid_field) {
-    step_success_ = true;
-    if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
-      SaveStep();
-    }
-    MakeStep(field);
-    return;
-  }
-  // There are some stoppers
-  if (no_screen || no_field) {
-    StopGame();
-    return;
-  }
-  if (game_over) {
-    step_success_ = false;
-    if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
-      SaveStep();
-    }
-    RestartGame();
-    return;
-  }
-  if (unknown_images) {
-    ShowUnknownImages();
-  }
 }
 
 void BotDialog::OnClickPosition(int xpos, int ypos) {

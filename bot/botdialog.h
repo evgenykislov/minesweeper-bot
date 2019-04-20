@@ -1,6 +1,7 @@
 #ifndef BOTDIALOG_H
 #define BOTDIALOG_H
 
+#include <condition_variable>
 #include <thread>
 
 #include <QDialog>
@@ -23,6 +24,8 @@ class BotDialog : public QDialog
 
  signals:
   void DoClickPosition(int xpos, int ypos);
+  void DoGameStopped(bool no_screen, bool no_field, bool unknown_images);
+  void DoGameOver();
 
  public slots:
   void OnCornersBtn();
@@ -50,6 +53,8 @@ class BotDialog : public QDialog
     kRestartButton,
   };
 
+  const float kReceiveFieldTimeout = 0.5;
+
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
   bool measures_defined_;
@@ -63,26 +68,26 @@ class BotDialog : public QDialog
 
   Ui::BotDialog* ui_;
   QTimer pointing_timer_; // Timer for waiting user selects corners, restart point
-  QTimer game_timer_; // Timer for making game steps
   size_t pointing_interval_;
   BotScreen scr_;
   std::list<QImage> unknown_images_;
   std::unique_ptr<std::thread> hook_thread_;
+  std::unique_ptr<std::thread> gaming_thread_;
+
   PointingTarget pointing_target_;
   QPoint top_left_corner_;
   QPoint bottom_right_corner_;
   QPoint restart_point_;
 
   ModelTetragonalNeural solver;
-  // Step variables
   size_t step_counter_;
-  FieldType step_field_;
-  unsigned int step_row_;
-  unsigned int step_column_;
-  bool step_success_;
+  // Gaming thread synchronize
+  bool finish_gaming_;
+  bool resume_gaming_;
+  std::condition_variable gaming_stopper_;
+  std::mutex gaming_lock_;
 
   void PointingCancel();
-  void MakeStep(const FieldType& field);
   void ShowUnknownImages();
   void UpdateUnknownImages();
   void CornersCompleted();
@@ -90,12 +95,13 @@ class BotDialog : public QDialog
   void ShowCornerImages();
   void StopGame();
   void RestartGame();
-  void SaveStep();
+  void SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success);
   void StartPointing();
+  void Gaming(); // Thread for gaming procedure
+  void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
 
  private slots:
   void PointingTick();
-  void GameTick();
   void OnClickPosition(int xpos, int ypos);
 };
 

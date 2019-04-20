@@ -31,7 +31,8 @@ SOURCES += \
     models/classifier.cpp \
     models/tetragonal_neural.cpp \
     lineeditwfocus.cpp \
-    imagesstorage.cpp
+    imagesstorage.cpp \
+    field.cpp
 
 HEADERS += \
     botdialog.h \
@@ -40,7 +41,8 @@ HEADERS += \
     models/classifier.h \
     models/tetragonal_neural.h \
     lineeditwfocus.h \
-    imagesstorage.h
+    imagesstorage.h \
+    field.h
 
 FORMS += \
     botdialog.ui \
