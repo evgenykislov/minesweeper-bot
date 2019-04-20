@@ -52,6 +52,7 @@ BotDialog::BotDialog(QWidget *parent)
   ui_->CornersLbl->hide();
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -76,6 +77,15 @@ BotDialog::BotDialog(QWidget *parent)
 
 BotDialog::~BotDialog()
 {
+  // Stop gaming thread
+  if (gaming_thread_ && gaming_thread_->joinable()) {
+    {
+      unique_lock<mutex> locker(gaming_lock_);
+      finish_gaming_ = true;
+      gaming_stopper_.notify_one();
+    }
+    gaming_thread_->join();
+  }
   PointingCancel();
   hook_set_dispatch_proc(nullptr);
   hook_lambda_ = nullptr;
@@ -380,5 +390,14 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
       break;
     default:
       assert(false);
+  }
+}
+
+void BotDialog::OnGameOver() {
+  if (true /* TODO check resume game */) {
+    scr_.MakeRestart();
+    unique_lock<mutex> locker(gaming_lock_);
+    resume_gaming_ = true;
+    gaming_stopper_.notify_one();
   }
 }

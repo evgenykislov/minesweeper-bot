@@ -103,6 +103,7 @@ class BotDialog : public QDialog
  private slots:
   void PointingTick();
   void OnClickPosition(int xpos, int ypos);
+  void OnGameOver();
 };
 
 #endif // BOTDIALOG_H
