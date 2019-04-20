@@ -1,6 +1,7 @@
 #ifndef BOTDIALOG_H
 #define BOTDIALOG_H
 
+#include <condition_variable>
 #include <thread>
 
 #include <QDialog>
@@ -23,6 +24,8 @@ class BotDialog : public QDialog
 
  signals:
   void DoClickPosition(int xpos, int ypos);
+  void DoGameStopped(bool no_screen, bool no_field, bool unknown_images);
+  void DoGameOver();
 
  public slots:
   void OnCornersBtn();
@@ -32,6 +35,8 @@ class BotDialog : public QDialog
   void OnRightField();
   void OnTopField();
   void OnBottomField();
+  void OnBottomRightCorner();
+  void OnRestartPoint();
 
  private:
   enum {
@@ -41,7 +46,17 @@ class BotDialog : public QDialog
     kClickAmount = 2,
   };
 
-  bool corners_defined_;
+  enum PointingTarget {
+    kEmptyTarget,
+    kTopLeftCorner,
+    kBottomRightCorner,
+    kRestartButton,
+  };
+
+  const float kReceiveFieldTimeout = 0.5;
+
+  bool top_left_corner_defined_;
+  bool bottom_right_corner_defined_;
   bool measures_defined_;
 
   const unsigned int kImageSize = 48;
@@ -52,36 +67,43 @@ class BotDialog : public QDialog
 
 
   Ui::BotDialog* ui_;
-  QTimer corners_timer_; // Timer for waiting user selects corners
-  QTimer game_timer_; // Timer for making game steps
-  size_t corners_interval_;
+  QTimer pointing_timer_; // Timer for waiting user selects corners, restart point
+  size_t pointing_interval_;
   BotScreen scr_;
   std::list<QImage> unknown_images_;
   std::unique_ptr<std::thread> hook_thread_;
-  QPoint clicks_[kClickAmount];
-  unsigned int click_index_;
-  ModelTetragonalNeural solver;
-  // Step variables
-  size_t step_counter_;
-  FieldType step_field_;
-  unsigned int step_row_;
-  unsigned int step_column_;
-  bool step_success_;
+  std::unique_ptr<std::thread> gaming_thread_;
 
-  void CornersCancel();
-  void MakeStep(const FieldType& field);
+  PointingTarget pointing_target_;
+  QPoint top_left_corner_;
+  QPoint bottom_right_corner_;
+  QPoint restart_point_;
+
+  ModelTetragonalNeural solver;
+  size_t step_counter_;
+  // Gaming thread synchronize
+  bool finish_gaming_;
+  bool resume_gaming_;
+  std::condition_variable gaming_stopper_;
+  std::mutex gaming_lock_;
+
+  void PointingCancel();
   void ShowUnknownImages();
   void UpdateUnknownImages();
-  void CornersCompleted(QRect frame);
+  void CornersCompleted();
   void FormImage(const QImage& image, QPixmap& pixels);
   void ShowCornerImages();
   void StopGame();
-  void SaveStep();
+  void RestartGame();
+  void SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success);
+  void StartPointing();
+  void Gaming(); // Thread for gaming procedure
+  void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
 
  private slots:
-  void CornersTick();
-  void GameTick();
+  void PointingTick();
   void OnClickPosition(int xpos, int ypos);
+  void OnGameOver();
 };
 
 #endif // BOTDIALOG_H

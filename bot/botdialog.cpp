@@ -37,22 +37,22 @@ void HookHandle(uiohook_event* const event) {
 
 BotDialog::BotDialog(QWidget *parent)
   : QDialog(parent)
-  , corners_defined_(false)
+  , top_left_corner_defined_(false)
+  , bottom_right_corner_defined_(false)
   , measures_defined_(false)
   , ui_(new Ui::BotDialog)
-  , corners_interval_(0)
-  , click_index_(0)
+  , pointing_interval_(0)
+  , pointing_target_(kEmptyTarget)
   , step_counter_(0)
-  , step_row_(0)
-  , step_column_(0)
-  , step_success_(false)
+  , finish_gaming_(false)
+  , resume_gaming_(false)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
-  connect(&corners_timer_, &QTimer::timeout, this, &BotDialog::CornersTick, Qt::QueuedConnection);
-  connect(&game_timer_, &QTimer::timeout, this, &BotDialog::GameTick, Qt::QueuedConnection);
+  connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -68,39 +68,46 @@ BotDialog::BotDialog(QWidget *parent)
     vector<uint8_t> vect_data((uint8_t*)(byte_data.data()), (uint8_t*)(byte_data.data() + byte_data.size()));
     solver.LoadModel(std::move(vect_data));
   }
+  // Start gaming thread
+  auto gaming_thread = new std::thread([this](){
+    Gaming();
+  });
+  gaming_thread_.reset(gaming_thread);
 }
 
 BotDialog::~BotDialog()
 {
-  CornersCancel();
+  // Stop gaming thread
+  if (gaming_thread_ && gaming_thread_->joinable()) {
+    {
+      unique_lock<mutex> locker(gaming_lock_);
+      finish_gaming_ = true;
+      gaming_stopper_.notify_one();
+    }
+    gaming_thread_->join();
+  }
+  PointingCancel();
   hook_set_dispatch_proc(nullptr);
   hook_lambda_ = nullptr;
   delete ui_;
 }
 
 void BotDialog::OnCornersBtn() {
-  try {
-    CornersCancel();
-    // Start new corners request
-    assert(!hook_thread_);
-    click_index_ = 0;
-    hook_thread_.reset(new std::thread([](){
-      hook_run();
-    }));
-    corners_interval_ = 0;
-    corners_timer_.start(kTimerInterval);
-  }
-  catch (exception&) {
-    corners_defined_ = false;
-    corners_timer_.stop();
-  }
+  pointing_target_ = kTopLeftCorner;
+  StartPointing();
 }
 
-void BotDialog::CornersCompleted(QRect frame) {
-  CornersCancel();
-  corners_defined_ = true;
+void BotDialog::CornersCompleted() {
+  if (!top_left_corner_defined_ || !bottom_right_corner_defined_) {
+    return;
+  }
+  // Apply field frame
+  QRect rect;
+  rect.setTopLeft(top_left_corner_);
+  rect.setBottomRight(bottom_right_corner_);
+  rect.normalized();
   scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-  scr_.SetApproximatelyRect(frame);
+  scr_.SetFrameRect(rect);
   ShowCornerImages();
 }
 
@@ -149,10 +156,12 @@ void BotDialog::ShowCornerImages() {
 }
 
 void BotDialog::StopGame() {
-  game_timer_.stop();
 }
 
-void BotDialog::SaveStep() {
+void BotDialog::RestartGame() {
+}
+
+void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success) {
   // save field
   stringstream field_filename;
   field_filename << "field_" << setfill('0') << setw(5) << step_counter_ << ".txt";
@@ -161,7 +170,7 @@ void BotDialog::SaveStep() {
     // TODO can't save
     return;
   }
-  for (auto row_iter = step_field_.begin(); row_iter != step_field_.end(); ++row_iter) {
+  for (auto row_iter = field.begin(); row_iter != field.end(); ++row_iter) {
     for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
       field_file << *col_iter;
     }
@@ -180,16 +189,105 @@ void BotDialog::SaveStep() {
     // TODO can't save
     return;
   }
-  step_file << step_row_ << " " << step_column_ << " " << step_success_ << " " << field_filename.str() << endl;
+  step_file << step_row << " " << step_col << " " << success << " " << field_filename.str() << endl;
   step_file.close();
 }
 
-void BotDialog::OnRun() {
-  if (!corners_defined_ || !measures_defined_) {
-    // TODO inform user about
-    return;
+void BotDialog::StartPointing() {
+  try {
+    PointingCancel();
+    // Start new corners request
+    assert(!hook_thread_);
+    assert(pointing_target_ != kEmptyTarget);
+    hook_thread_.reset(new std::thread([](){
+      hook_run();
+    }));
+    pointing_interval_ = 0;
+    pointing_timer_.start(kTimerInterval);
   }
-  game_timer_.start(kTimerInterval);
+  catch (exception&) {
+    PointingCancel();
+  }
+}
+
+void BotDialog::Gaming() {
+  // Thread for gaming procedure
+
+  while (true) {
+    // Reset field to start
+    {
+      unique_lock<mutex> locker(gaming_lock_);
+      gaming_stopper_.wait(locker, [this](){
+        return finish_gaming_ || resume_gaming_;
+      });
+      if (finish_gaming_) {
+        break;
+      }
+      resume_gaming_ = false;
+    }
+    while (true) {
+      {
+        lock_guard<mutex> locker(gaming_lock_);
+        if (finish_gaming_) {
+          break;
+        }
+      }
+      // Get field
+      Field field;
+      bool game_over;
+      bool error_no_screen;
+      bool error_no_field;
+      bool error_unknown_images;
+      bool error_timeout;
+      scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
+      if (error_no_screen || error_no_field || error_unknown_images) {
+        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+        break;
+      }
+      if (game_over) {
+        emit DoGameOver();
+        break;
+      }
+
+      // Calculate new step
+      unsigned int row;
+      unsigned int col;
+      bool sure_step;
+      ++step_counter_;
+      solver.GetStep(field, row, col, sure_step);
+      // Detect wait, mouse move, etc
+
+      // Make step
+      scr_.MakeStep(row, col);
+      // Wait for update complete
+      Field next_field;
+      scr_.GetChangedField(next_field, field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
+      // Detect success
+      if (error_no_screen || error_no_field || error_unknown_images) {
+        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+        break;
+      }
+      // Save step with state
+      SaveStep(field, row, col, !game_over);
+      if (game_over) {
+        emit DoGameOver();
+        break;
+      }
+    }
+  }
+
+}
+
+void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_images) {
+
+}
+
+void BotDialog::OnRun() {
+  {
+    unique_lock<mutex> locker(gaming_lock_);
+    resume_gaming_ = true;
+    gaming_stopper_.notify_one();
+  }
 }
 
 void BotDialog::LoseFocus() {
@@ -221,38 +319,23 @@ void BotDialog::OnBottomField() {
   ShowCornerImages();
 }
 
-void BotDialog::CornersCancel() {
-  corners_defined_ = false;
-  corners_timer_.stop();
+void BotDialog::OnBottomRightCorner() {
+  pointing_target_ = kBottomRightCorner;
+  StartPointing();
+}
+
+void BotDialog::OnRestartPoint() {
+  pointing_target_ = kRestartButton;
+  StartPointing();
+}
+
+void BotDialog::PointingCancel() {
+  pointing_timer_.stop();
   if (hook_thread_ && hook_thread_->joinable()) {
     hook_stop();
     hook_thread_->join();
   }
   hook_thread_.reset();
-}
-
-void BotDialog::MakeStep(const FieldType& field) {
-  unsigned int row;
-  unsigned int col;
-  bool sure_step;
-  ++step_counter_;
-  try {
-    step_field_ = field;
-    auto step_start = steady_clock::now();
-    solver.GetStep(field, row, col, sure_step);
-    auto before_make_step = steady_clock::now();
-    scr_.MakeStep(row, col);
-    step_row_ = row;
-    step_column_ = col;
-    auto after_step = steady_clock::now();
-    duration<double> calc_time = before_make_step - step_start;
-    duration<double> mouse_time = after_step - before_make_step;
-    auto debug_message = QString::fromUtf8(u8"Step: %1, Intervals: %2 + %3").arg(step_counter_).arg(calc_time.count()).arg(mouse_time.count());
-    ui_->debug_lbl_->setText(debug_message);
-  }
-  catch (exception&) {
-    // TODO Can't make a step
-  }
 }
 
 void BotDialog::ShowUnknownImages() {
@@ -277,62 +360,44 @@ void BotDialog::UpdateUnknownImages() {
   UpdateUnknownImages();
 }
 
-void BotDialog::CornersTick() {
-  corners_interval_ += kTimerInterval;
-  if (corners_interval_ >= kCornersTimeout) {
-    CornersCancel();
+void BotDialog::PointingTick() {
+  pointing_interval_ += kTimerInterval;
+  if (pointing_interval_ >= kCornersTimeout) {
+    PointingCancel();
     return;
   }
-  int progress = int(double(corners_interval_) / kCornersTimeout * kProgressScale);
+  int progress = int(double(pointing_interval_) / kCornersTimeout * kProgressScale);
   ui_->CornersBar->setValue(progress);
 }
 
-void BotDialog::GameTick() {
-  if (!unknown_images_.empty()) {
-    return;
-  }
-  FieldType field;
-  bool no_screen;
-  bool no_field;
-  bool game_over;
-  bool unknown_images;
-  auto valid_field = scr_.GetField(field, no_screen, no_field, game_over, unknown_images);
-  if (valid_field) {
-    step_success_ = true;
-    if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
-      SaveStep();
-    }
-    MakeStep(field);
-    return;
-  }
-  // There are some stoppers
-  if (no_screen || no_field) {
-    StopGame();
-    return;
-  }
-  if (game_over) {
-    step_success_ = false;
-    if (ui_->save_steps_chk_->checkState() == Qt::Checked) {
-      SaveStep();
-    }
-    StopGame();
-    return;
-  }
-  if (unknown_images) {
-    ShowUnknownImages();
+void BotDialog::OnClickPosition(int xpos, int ypos) {
+  PointingCancel();
+  QPoint point(xpos, ypos);
+  switch (pointing_target_) {
+    case kTopLeftCorner:
+      top_left_corner_ = point;
+      top_left_corner_defined_ = true;
+      CornersCompleted();
+      break;
+    case kBottomRightCorner:
+      bottom_right_corner_ = point;
+      bottom_right_corner_defined_ = true;
+      CornersCompleted();
+      break;
+    case kRestartButton:
+      restart_point_ = point;
+      scr_.SetRestartPoint(point);
+      break;
+    default:
+      assert(false);
   }
 }
 
-void BotDialog::OnClickPosition(int xpos, int ypos) {
-  if (click_index_ >= kClickAmount) {
-    return;
-  }
-  clicks_[click_index_] = QPoint(xpos, ypos);
-  ++click_index_;
-  if (click_index_ == kClickAmount) {
-    QRect rect;
-    rect.setTopLeft(clicks_[0]);
-    rect.setBottomRight(clicks_[1]);
-    CornersCompleted(rect.normalized());
+void BotDialog::OnGameOver() {
+  if (true /* TODO check resume game */) {
+    scr_.MakeRestart();
+    unique_lock<mutex> locker(gaming_lock_);
+    resume_gaming_ = true;
+    gaming_stopper_.notify_one();
   }
 }
