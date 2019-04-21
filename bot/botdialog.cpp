@@ -6,14 +6,18 @@
 #include <sstream>
 
 #include <QDesktopWidget>
+#include <QDir>
 #include <QFile>
 #include <QPainter>
+#include <QSettings>
 
 #include <uiohook.h>
 
+#include "common.h"
 #include "botdialog.h"
 #include "celltypedialog.h"
 #include "ui_botdialog.h"
+#include "settingsdialog.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -39,13 +43,18 @@ BotDialog::BotDialog(QWidget *parent)
   : QDialog(parent)
   , top_left_corner_defined_(false)
   , bottom_right_corner_defined_(false)
-  , measures_defined_(false)
+  , row_amount_(0)
+  , col_amount_(0)
+  , mines_amount_(0)
   , ui_(new Ui::BotDialog)
   , pointing_interval_(0)
   , pointing_target_(kEmptyTarget)
-  , step_counter_(0)
+  , save_counter_(0)
   , finish_gaming_(false)
   , resume_gaming_(false)
+  , auto_restart_game_(false)
+  , save_steps_(false)
+  , start_index_(0)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
@@ -56,10 +65,12 @@ BotDialog::BotDialog(QWidget *parent)
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoStartUpdate, this, &BotDialog::OnStartUpdate, Qt::QueuedConnection);
   hook_lambda_ = [this](int xpos, int ypos) {
     emit DoClickPosition(xpos, ypos);
   };
   hook_set_dispatch_proc(HookHandle);
+  LoadSettings();
 
   QFile model_file("model.bin");
   if (model_file.open(QIODevice::ReadOnly)) {
@@ -73,6 +84,7 @@ BotDialog::BotDialog(QWidget *parent)
     Gaming();
   });
   gaming_thread_.reset(gaming_thread);
+  emit DoStartUpdate();
 }
 
 BotDialog::~BotDialog()
@@ -163,8 +175,24 @@ void BotDialog::RestartGame() {
 
 void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success) {
   // save field
+  QString folder;
+  size_t index;
+  {
+    lock_guard<mutex> locker(save_lock_);
+    if (!save_steps_) {
+      // Dont save anything
+      return;
+    }
+    folder = save_folder_;
+    index = save_counter_;
+  }
+  QDir file_folder(folder);
+  file_folder.mkpath("."); // TODO check return
+  QString folder_name = file_folder.absolutePath() + QDir::separator();
+  stringstream file_name;
+  file_name << "field_" << setfill('0') << setw(5) << index << ".txt";
   stringstream field_filename;
-  field_filename << "field_" << setfill('0') << setw(5) << step_counter_ << ".txt";
+  field_filename << folder_name.toStdString() << file_name.str();
   ofstream field_file(field_filename.str(), ios_base::trunc);
   if (!field_file) {
     // TODO can't save
@@ -183,14 +211,18 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
   field_file.close();
   // Store predicted step
   stringstream step_filename;
-  step_filename << "step_" << setfill('0') << setw(5) << step_counter_ << ".txt";
+  step_filename << folder_name.toStdString() << "step_" << setfill('0') << setw(5) << index << ".txt";
   ofstream step_file(step_filename.str(), ios_base::trunc);
   if (!step_file) {
     // TODO can't save
     return;
   }
-  step_file << step_row << " " << step_col << " " << success << " " << field_filename.str() << endl;
+  step_file << step_row << " " << step_col << " " << success << " " << file_name.str() << endl;
   step_file.close();
+  {
+    lock_guard<mutex> locker(save_lock_);
+    ++save_counter_;
+  }
 }
 
 void BotDialog::StartPointing() {
@@ -212,9 +244,8 @@ void BotDialog::StartPointing() {
 
 void BotDialog::Gaming() {
   // Thread for gaming procedure
-
   while (true) {
-    // Reset field to start
+    // Wait for user action (run, restart, etc)
     {
       unique_lock<mutex> locker(gaming_lock_);
       gaming_stopper_.wait(locker, [this](){
@@ -253,7 +284,6 @@ void BotDialog::Gaming() {
       unsigned int row;
       unsigned int col;
       bool sure_step;
-      ++step_counter_;
       solver.GetStep(field, row, col, sure_step);
       // Detect wait, mouse move, etc
 
@@ -282,7 +312,40 @@ void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_im
 
 }
 
+void BotDialog::LoadSettings() {
+  QSettings settings(QSettings::UserScope, ORGANIZATION, APPLICATION);
+  auto_restart_game_ = settings.value("user/autorestart", false).toBool();
+  {
+    lock_guard<mutex> locker(save_lock_);
+    save_steps_ = settings.value("train/save_steps", false).toBool();
+    save_folder_ = settings.value("train/folder", ".").toString();
+  }
+  top_left_corner_ = settings.value("screen/topleft").toPoint();
+  bottom_right_corner_ = settings.value("screen/bottomright").toPoint();
+  restart_point_ = settings.value("screen/restart").toPoint();
+  row_amount_ = settings.value("game/row", 0).toUInt();
+  col_amount_ = settings.value("game/col", 0).toUInt();
+  mines_amount_ = settings.value("game/mines", 0).toUInt();
+}
+
+void BotDialog::SaveSettings() {
+  QSettings settings(QSettings::UserScope, ORGANIZATION, APPLICATION);
+  settings.setValue("user/autorestart", auto_restart_game_);
+  {
+    lock_guard<mutex> locker(save_lock_);
+    settings.setValue("train/save_steps", save_steps_);
+    settings.setValue("train/folder", save_folder_);
+  }
+  settings.setValue("screen/topleft", top_left_corner_);
+  settings.setValue("screen/bottomright", bottom_right_corner_);
+  settings.setValue("screen/restart", restart_point_);
+  settings.setValue("game/row", row_amount_);
+  settings.setValue("game/col", col_amount_);
+  settings.setValue("game/mines", mines_amount_);
+}
+
 void BotDialog::OnRun() {
+  SaveSettings();
   {
     unique_lock<mutex> locker(gaming_lock_);
     resume_gaming_ = true;
@@ -291,12 +354,11 @@ void BotDialog::OnRun() {
 }
 
 void BotDialog::LoseFocus() {
-  auto row_amount = ui_->row_edt_->text().toUInt();
-  auto col_amount = ui_->col_edt_->text().toUInt();
-  auto mines_amount = ui_->mines_edt_->text().toUInt();
-  scr_.SetFieldSize(row_amount, col_amount);
+  row_amount_ = ui_->row_edt_->text().toUInt();
+  col_amount_ = ui_->col_edt_->text().toUInt();
+  mines_amount_ = ui_->mines_edt_->text().toUInt();
+  scr_.SetFieldSize(row_amount_, col_amount_);
   ShowCornerImages();
-  measures_defined_ = row_amount > 0 && col_amount > 0 && mines_amount > 0;
 }
 
 void BotDialog::OnLeftField() {
@@ -327,6 +389,22 @@ void BotDialog::OnBottomRightCorner() {
 void BotDialog::OnRestartPoint() {
   pointing_target_ = kRestartButton;
   StartPointing();
+}
+
+void BotDialog::OnSettings() {
+  SettingsDialog dlg(this);
+  {
+    lock_guard<mutex> locker(save_lock_);
+    dlg.Set(auto_restart_game_, save_steps_, save_folder_, start_index_);
+  }
+  if (dlg.exec() == QDialog::Accepted) {
+    {
+      lock_guard<mutex> locker(save_lock_);
+      dlg.Get(auto_restart_game_, save_steps_, save_folder_, start_index_);
+      save_counter_ = start_index_;
+    }
+    SaveSettings();
+  }
 }
 
 void BotDialog::PointingCancel() {
@@ -394,10 +472,25 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
 }
 
 void BotDialog::OnGameOver() {
-  if (true /* TODO check resume game */) {
+  if (auto_restart_game_) {
     scr_.MakeRestart();
     unique_lock<mutex> locker(gaming_lock_);
     resume_gaming_ = true;
     gaming_stopper_.notify_one();
   }
+}
+
+void BotDialog::OnStartUpdate() {
+  // Set screen frame
+  QRect rect;
+  rect.setTopLeft(top_left_corner_);
+  rect.setBottomRight(bottom_right_corner_);
+  rect.normalized();
+  scr_.SetFrameRect(rect);
+  scr_.SetRestartPoint(restart_point_);
+  ui_->row_edt_->setText(QString("%1").arg(row_amount_));
+  ui_->col_edt_->setText(QString("%1").arg(col_amount_));
+  ui_->mines_edt_->setText(QString("%1").arg(mines_amount_));
+  scr_.SetFieldSize(row_amount_, col_amount_);
+  ShowCornerImages();
 }
