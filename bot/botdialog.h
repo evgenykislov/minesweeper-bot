@@ -23,6 +23,7 @@ class BotDialog : public QDialog
   ~BotDialog();
 
  signals:
+  void DoStartUpdate();
   void DoClickPosition(int xpos, int ypos);
   void DoGameStopped(bool no_screen, bool no_field, bool unknown_images);
   void DoGameOver();
@@ -58,7 +59,9 @@ class BotDialog : public QDialog
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
-  bool measures_defined_;
+  unsigned int row_amount_;
+  unsigned int col_amount_;
+  unsigned int mines_amount_;
 
   const unsigned int kImageSize = 48;
   const unsigned int kImageSizeWithBorder = 64;
@@ -81,7 +84,7 @@ class BotDialog : public QDialog
   QPoint restart_point_;
 
   ModelTetragonalNeural solver;
-  size_t step_counter_;
+  size_t save_counter_;
   // Gaming thread synchronize
   bool finish_gaming_;
   bool resume_gaming_;
@@ -92,6 +95,7 @@ class BotDialog : public QDialog
   bool save_steps_;
   QString save_folder_;
   unsigned int start_index_;
+  std::mutex save_lock_;
 
   void PointingCancel();
   void ShowUnknownImages();
@@ -112,6 +116,7 @@ class BotDialog : public QDialog
   void PointingTick();
   void OnClickPosition(int xpos, int ypos);
   void OnGameOver();
+  void OnStartUpdate();
 };
 
 #endif // BOTDIALOG_H
