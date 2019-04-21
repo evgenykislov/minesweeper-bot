@@ -35,5 +35,6 @@ void SettingsDialog::OnAccept() {
   auto_restart_game_ = ui_->autorestart_chk_->checkState() == Qt::Checked;
   save_steps_ = ui_->save_steps_chk_->checkState() == Qt::Checked;
   save_folder_ = ui_->save_folder_edt_->text();
+  start_index_ = ui_->start_index_edt_->text().toUInt();
   emit accept();
 }

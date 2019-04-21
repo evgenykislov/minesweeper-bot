@@ -189,8 +189,10 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
   QDir file_folder(folder);
   file_folder.mkpath("."); // TODO check return
   QString folder_name = file_folder.absolutePath() + QDir::separator();
+  stringstream file_name;
+  file_name << "field_" << setfill('0') << setw(5) << index << ".txt";
   stringstream field_filename;
-  field_filename << folder_name.toStdString() << "field_" << setfill('0') << setw(5) << index << ".txt";
+  field_filename << folder_name.toStdString() << file_name.str();
   ofstream field_file(field_filename.str(), ios_base::trunc);
   if (!field_file) {
     // TODO can't save
@@ -215,7 +217,7 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
     // TODO can't save
     return;
   }
-  step_file << step_row << " " << step_col << " " << success << " " << field_filename.str() << endl;
+  step_file << step_row << " " << step_col << " " << success << " " << file_name.str() << endl;
   step_file.close();
   {
     lock_guard<mutex> locker(save_lock_);
