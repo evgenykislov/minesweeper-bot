@@ -37,6 +37,7 @@ class BotDialog : public QDialog
   void OnBottomField();
   void OnBottomRightCorner();
   void OnRestartPoint();
+  void OnSettings();
 
  private:
   enum {
@@ -86,6 +87,11 @@ class BotDialog : public QDialog
   bool resume_gaming_;
   std::condition_variable gaming_stopper_;
   std::mutex gaming_lock_;
+  // Settings
+  bool auto_restart_game_;
+  bool save_steps_;
+  QString save_folder_;
+  unsigned int start_index_;
 
   void PointingCancel();
   void ShowUnknownImages();
@@ -99,6 +105,8 @@ class BotDialog : public QDialog
   void StartPointing();
   void Gaming(); // Thread for gaming procedure
   void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
+  void LoadSettings();
+  void SaveSettings();
 
  private slots:
   void PointingTick();

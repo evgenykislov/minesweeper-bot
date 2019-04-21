@@ -32,7 +32,8 @@ SOURCES += \
     models/tetragonal_neural.cpp \
     lineeditwfocus.cpp \
     imagesstorage.cpp \
-    field.cpp
+    field.cpp \
+    settingsdialog.cpp
 
 HEADERS += \
     botdialog.h \
@@ -42,11 +43,14 @@ HEADERS += \
     models/tetragonal_neural.h \
     lineeditwfocus.h \
     imagesstorage.h \
-    field.h
+    field.h \
+    settingsdialog.h \
+    common.h
 
 FORMS += \
     botdialog.ui \
-    celltypedialog.ui
+    celltypedialog.ui \
+    settingsdialog.ui
 
 RESOURCES +=
 

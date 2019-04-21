@@ -8,12 +8,15 @@
 #include <QDesktopWidget>
 #include <QFile>
 #include <QPainter>
+#include <QSettings>
 
 #include <uiohook.h>
 
+#include "common.h"
 #include "botdialog.h"
 #include "celltypedialog.h"
 #include "ui_botdialog.h"
+#include "settingsdialog.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -46,6 +49,9 @@ BotDialog::BotDialog(QWidget *parent)
   , step_counter_(0)
   , finish_gaming_(false)
   , resume_gaming_(false)
+  , auto_restart_game_(false)
+  , save_steps_(false)
+  , start_index_(0)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
@@ -60,6 +66,7 @@ BotDialog::BotDialog(QWidget *parent)
     emit DoClickPosition(xpos, ypos);
   };
   hook_set_dispatch_proc(HookHandle);
+  LoadSettings();
 
   QFile model_file("model.bin");
   if (model_file.open(QIODevice::ReadOnly)) {
@@ -73,6 +80,14 @@ BotDialog::BotDialog(QWidget *parent)
     Gaming();
   });
   gaming_thread_.reset(gaming_thread);
+  // Set screen frame
+  QRect rect;
+  rect.setTopLeft(top_left_corner_);
+  rect.setBottomRight(bottom_right_corner_);
+  rect.normalized();
+  scr_.SetFrameRect(rect);
+  scr_.SetRestartPoint(restart_point_);
+  ShowCornerImages();
 }
 
 BotDialog::~BotDialog()
@@ -282,7 +297,28 @@ void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_im
 
 }
 
+void BotDialog::LoadSettings() {
+  QSettings settings(QSettings::UserScope, ORGANIZATION, APPLICATION);
+  auto_restart_game_ = settings.value("user/autorestart", false).toBool();
+  save_steps_ = settings.value("train/save_steps", false).toBool();
+  save_folder_ = settings.value("train/folder", ".").toString();
+  top_left_corner_ = settings.value("screen/topleft").toPoint();
+  bottom_right_corner_ = settings.value("screen/bottomright").toPoint();
+  restart_point_ = settings.value("screen/restart").toPoint();
+}
+
+void BotDialog::SaveSettings() {
+  QSettings settings(QSettings::UserScope, ORGANIZATION, APPLICATION);
+  settings.setValue("user/autorestart", auto_restart_game_);
+  settings.setValue("train/save_steps", save_steps_);
+  settings.setValue("train/folder", save_folder_);
+  settings.setValue("screen/topleft", top_left_corner_);
+  settings.setValue("screen/bottomright", bottom_right_corner_);
+  settings.setValue("screen/restart", restart_point_);
+}
+
 void BotDialog::OnRun() {
+  SaveSettings();
   {
     unique_lock<mutex> locker(gaming_lock_);
     resume_gaming_ = true;
@@ -327,6 +363,21 @@ void BotDialog::OnBottomRightCorner() {
 void BotDialog::OnRestartPoint() {
   pointing_target_ = kRestartButton;
   StartPointing();
+}
+
+void BotDialog::OnSettings() {
+  SettingsDialog dlg(this);
+  dlg.auto_restart_game_ = auto_restart_game_;
+  dlg.save_steps_ = save_steps_;
+  dlg.save_folder_ = save_folder_;
+  dlg.start_index_ = start_index_;
+  if (dlg.exec() == QDialog::Accepted) {
+    auto_restart_game_ = dlg.auto_restart_game_;
+    save_steps_ = dlg.save_steps_;
+    save_folder_ = dlg.save_folder_;
+    start_index_ = dlg.start_index_;
+    SaveSettings();
+  }
 }
 
 void BotDialog::PointingCancel() {
