@@ -62,6 +62,7 @@ BotDialog::BotDialog(QWidget *parent)
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoGameComplete, this, &BotDialog::OnGameComplete, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -244,6 +245,7 @@ void BotDialog::StartPointing() {
 
 void BotDialog::Gaming() {
   // Thread for gaming procedure
+  unsigned int mines_amount;
   while (true) {
     // Wait for user action (run, restart, etc)
     {
@@ -255,6 +257,10 @@ void BotDialog::Gaming() {
         break;
       }
       resume_gaming_ = false;
+    }
+    {
+      lock_guard<mutex> locker(mines_amount_lock_);
+      mines_amount = mines_amount_;
     }
     while (true) {
       {
@@ -279,7 +285,19 @@ void BotDialog::Gaming() {
         emit DoGameOver();
         break;
       }
-
+      // Check game completed
+      unsigned int closed_cells_amount = 0;
+      for (auto row_iter = field.begin(); row_iter != field.end(); ++row_iter) {
+        for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
+          if (*col_iter == kClosedCellSymbol) {
+            ++closed_cells_amount;
+          }
+        }
+      }
+      if (closed_cells_amount <= mines_amount) {
+        emit DoGameComplete();
+        break;
+      }
       // Calculate new step
       unsigned int row;
       unsigned int col;
@@ -325,7 +343,10 @@ void BotDialog::LoadSettings() {
   restart_point_ = settings.value("screen/restart").toPoint();
   row_amount_ = settings.value("game/row", 0).toUInt();
   col_amount_ = settings.value("game/col", 0).toUInt();
-  mines_amount_ = settings.value("game/mines", 0).toUInt();
+  {
+    lock_guard<mutex> locker(mines_amount_lock_);
+    mines_amount_ = settings.value("game/mines", 0).toUInt();
+  }
 }
 
 void BotDialog::SaveSettings() {
@@ -341,7 +362,10 @@ void BotDialog::SaveSettings() {
   settings.setValue("screen/restart", restart_point_);
   settings.setValue("game/row", row_amount_);
   settings.setValue("game/col", col_amount_);
-  settings.setValue("game/mines", mines_amount_);
+  {
+    lock_guard<mutex> locker(mines_amount_lock_);
+    settings.setValue("game/mines", mines_amount_);
+  }
 }
 
 void BotDialog::OnRun() {
@@ -356,7 +380,10 @@ void BotDialog::OnRun() {
 void BotDialog::LoseFocus() {
   row_amount_ = ui_->row_edt_->text().toUInt();
   col_amount_ = ui_->col_edt_->text().toUInt();
-  mines_amount_ = ui_->mines_edt_->text().toUInt();
+  {
+    lock_guard<mutex> locker(mines_amount_lock_);
+    mines_amount_ = ui_->mines_edt_->text().toUInt();
+  }
   scr_.SetFieldSize(row_amount_, col_amount_);
   ShowCornerImages();
 }
@@ -480,6 +507,10 @@ void BotDialog::OnGameOver() {
   }
 }
 
+void BotDialog::OnGameComplete() {
+  // TODO
+}
+
 void BotDialog::OnStartUpdate() {
   // Set screen frame
   QRect rect;
@@ -490,7 +521,10 @@ void BotDialog::OnStartUpdate() {
   scr_.SetRestartPoint(restart_point_);
   ui_->row_edt_->setText(QString("%1").arg(row_amount_));
   ui_->col_edt_->setText(QString("%1").arg(col_amount_));
-  ui_->mines_edt_->setText(QString("%1").arg(mines_amount_));
+  {
+    lock_guard<mutex> locker(mines_amount_lock_);
+    ui_->mines_edt_->setText(QString("%1").arg(mines_amount_));
+  }
   scr_.SetFieldSize(row_amount_, col_amount_);
   ShowCornerImages();
 }

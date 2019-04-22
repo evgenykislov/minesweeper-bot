@@ -27,6 +27,7 @@ class BotDialog : public QDialog
   void DoClickPosition(int xpos, int ypos);
   void DoGameStopped(bool no_screen, bool no_field, bool unknown_images);
   void DoGameOver();
+  void DoGameComplete();
 
  public slots:
   void OnCornersBtn();
@@ -56,12 +57,14 @@ class BotDialog : public QDialog
   };
 
   const float kReceiveFieldTimeout = 0.5;
+  const char kClosedCellSymbol = '.';
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
   unsigned int row_amount_;
   unsigned int col_amount_;
   unsigned int mines_amount_;
+  std::mutex mines_amount_lock_;
 
   const unsigned int kImageSize = 48;
   const unsigned int kImageSizeWithBorder = 64;
@@ -116,6 +119,7 @@ class BotDialog : public QDialog
   void PointingTick();
   void OnClickPosition(int xpos, int ypos);
   void OnGameOver();
+  void OnGameComplete();
   void OnStartUpdate();
 };
 
