@@ -127,6 +127,8 @@ class TensorFlowSweeper:
         features = self.__CreateEmptyFeatures()
         labels = []
         for index in range(len(training)):
+            if len(training[index]) != 3:
+                raise ValueError("Wrong format training data")
             target_row = training[index][0]
             target_col = training[index][1]
             target_forecast = training[index][2]
