@@ -1,6 +1,7 @@
 #ifndef BOTDIALOG_H
 #define BOTDIALOG_H
 
+#include <chrono>
 #include <condition_variable>
 #include <thread>
 
@@ -57,6 +58,9 @@ class BotDialog : public QDialog
   };
 
   const float kReceiveFieldTimeout = 0.5;
+  const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
+  const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
+  const int64_t kWaitMouseProcessing = 100;
   const char kClosedCellSymbol = '.';
   const unsigned int kDefaultStartIndex = 0;
   const unsigned int kDefaultFinishIndex = 99999;
@@ -111,11 +115,13 @@ class BotDialog : public QDialog
   void StopGame();
   void RestartGame();
   void SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success);
-  void StartPointing();
+  void StartPointing(PointingTarget target);
   void Gaming(); // Thread for gaming procedure
   void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
   void LoadSettings();
   void SaveSettings();
+  void UnhookMouseByTimeout();
+  bool IsMouseIdle();
 
  private slots:
   void PointingTick();
