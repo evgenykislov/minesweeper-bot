@@ -29,6 +29,7 @@ class BotDialog : public QDialog
   void DoGameStopped(bool no_screen, bool no_field, bool unknown_images);
   void DoGameOver();
   void DoGameComplete();
+  void DoGameStoppedByUser();
 
  public slots:
   void OnCornersBtn();
@@ -41,6 +42,7 @@ class BotDialog : public QDialog
   void OnBottomRightCorner();
   void OnRestartPoint();
   void OnSettings();
+  void OnStop();
 
  private:
   enum {
@@ -96,7 +98,8 @@ class BotDialog : public QDialog
   unsigned int save_counter_;
   // Gaming thread synchronize
   bool finish_gaming_;
-  bool resume_gaming_;
+  bool resume_gaming_; // Flag to resume game (flag is resetted in game resume)
+  bool stop_gaming_; // Flag to finish game (flag is resetted in game stop)
   std::condition_variable gaming_stopper_;
   std::mutex gaming_lock_;
   // Settings
@@ -129,6 +132,7 @@ class BotDialog : public QDialog
   void OnGameOver();
   void OnGameComplete();
   void OnStartUpdate();
+  void OnGameStoppedByUser();
 };
 
 #endif // BOTDIALOG_H

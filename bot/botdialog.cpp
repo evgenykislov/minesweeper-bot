@@ -60,6 +60,7 @@ BotDialog::BotDialog(QWidget *parent)
   , save_counter_(kDefaultStartIndex)
   , finish_gaming_(false)
   , resume_gaming_(false)
+  , stop_gaming_(false)
   , auto_restart_game_(false)
   , save_steps_(false)
   , finish_index_(kDefaultFinishIndex)
@@ -72,6 +73,7 @@ BotDialog::BotDialog(QWidget *parent)
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameComplete, this, &BotDialog::OnGameComplete, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoGameStoppedByUser, this, &BotDialog::OnGameStoppedByUser, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -289,6 +291,11 @@ void BotDialog::Gaming() {
         if (finish_gaming_) {
           break;
         }
+        if (stop_gaming_) {
+          stop_gaming_ = false;
+          DoGameStoppedByUser();
+          break;
+        }
       }
       // Check mouse aren't moved
       if (!IsMouseIdle()) {
@@ -474,6 +481,12 @@ void BotDialog::OnSettings() {
   }
 }
 
+void BotDialog::OnStop() {
+  unique_lock<mutex> locker(gaming_lock_);
+  stop_gaming_ = true;
+  gaming_stopper_.notify_one();
+}
+
 void BotDialog::PointingCancel() {
   pointing_timer_.stop();
 }
@@ -562,4 +575,8 @@ void BotDialog::OnStartUpdate() {
   }
   scr_.SetFieldSize(row_amount_, col_amount_);
   ShowCornerImages();
+}
+
+void BotDialog::OnGameStoppedByUser() {
+  // TODO
 }
