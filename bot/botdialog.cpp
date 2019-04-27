@@ -49,12 +49,12 @@ BotDialog::BotDialog(QWidget *parent)
   , ui_(new Ui::BotDialog)
   , pointing_interval_(0)
   , pointing_target_(kEmptyTarget)
-  , save_counter_(0)
+  , save_counter_(kDefaultStartIndex)
   , finish_gaming_(false)
   , resume_gaming_(false)
   , auto_restart_game_(false)
   , save_steps_(false)
-  , start_index_(0)
+  , finish_index_(kDefaultFinishIndex)
 {
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
@@ -182,6 +182,10 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
     lock_guard<mutex> locker(save_lock_);
     if (!save_steps_) {
       // Dont save anything
+      return;
+    }
+    if (save_counter_ > finish_index_) {
+      // All steps were saved
       return;
     }
     folder = save_folder_;
@@ -422,13 +426,12 @@ void BotDialog::OnSettings() {
   SettingsDialog dlg(this);
   {
     lock_guard<mutex> locker(save_lock_);
-    dlg.Set(auto_restart_game_, save_steps_, save_folder_, start_index_);
+    dlg.Set(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
   }
   if (dlg.exec() == QDialog::Accepted) {
     {
       lock_guard<mutex> locker(save_lock_);
-      dlg.Get(auto_restart_game_, save_steps_, save_folder_, start_index_);
-      save_counter_ = start_index_;
+      dlg.Get(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
     }
     SaveSettings();
   }

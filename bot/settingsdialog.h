@@ -15,8 +15,8 @@ class SettingsDialog : public QDialog
   explicit SettingsDialog(QWidget *parent = 0);
   ~SettingsDialog();
 
-  void Set(bool auto_restart_game_, bool save_steps_, const QString& save_folder_, unsigned int start_index_);
-  void Get(bool& auto_restart_game_, bool& save_steps_, QString& save_folder_, unsigned int& start_index_);
+  void Set(bool auto_restart_game, bool save_steps, const QString& save_folder, unsigned int start_index, unsigned int finish_index);
+  void Get(bool& auto_restart_game, bool& save_steps, QString& save_folder, unsigned int& start_index, unsigned int& finish_index);
 
  public slots:
   void OnAccept();
@@ -27,6 +27,7 @@ class SettingsDialog : public QDialog
   bool save_steps_;
   QString save_folder_;
   unsigned int start_index_;
+  unsigned int finish_index_;
 };
 
 #endif // SETTINGSDIALOG_H

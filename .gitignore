@@ -55,3 +55,5 @@ solvers/tetragonal_neural/__pycache__/
 bot-profiler/
 
 bot-release/
+
+solvers/tetragonal_neural/train/

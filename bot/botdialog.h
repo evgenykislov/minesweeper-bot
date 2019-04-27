@@ -58,6 +58,8 @@ class BotDialog : public QDialog
 
   const float kReceiveFieldTimeout = 0.5;
   const char kClosedCellSymbol = '.';
+  const unsigned int kDefaultStartIndex = 0;
+  const unsigned int kDefaultFinishIndex = 99999;
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
@@ -87,7 +89,7 @@ class BotDialog : public QDialog
   QPoint restart_point_;
 
   ModelTetragonalNeural solver;
-  size_t save_counter_;
+  unsigned int save_counter_;
   // Gaming thread synchronize
   bool finish_gaming_;
   bool resume_gaming_;
@@ -97,7 +99,7 @@ class BotDialog : public QDialog
   bool auto_restart_game_;
   bool save_steps_;
   QString save_folder_;
-  unsigned int start_index_;
+  unsigned int finish_index_;
   std::mutex save_lock_;
 
   void PointingCancel();
