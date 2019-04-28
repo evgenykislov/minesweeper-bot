@@ -46,7 +46,7 @@ class BotDialog : public QDialog
 
  private:
   enum {
-    kTimerInterval = 200,
+    kPointingTimerInterval = 200,
     kCornersTimeout = 20000,
     kProgressScale = 100,
     kClickAmount = 2,
@@ -66,6 +66,7 @@ class BotDialog : public QDialog
   const char kClosedCellSymbol = '.';
   const unsigned int kDefaultStartIndex = 0;
   const unsigned int kDefaultFinishIndex = 99999;
+  const int kUpdateTimerInterval = 200;
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
@@ -83,6 +84,7 @@ class BotDialog : public QDialog
 
   Ui::BotDialog* ui_;
   QTimer pointing_timer_; // Timer for waiting user selects corners, restart point
+  QTimer update_timer_; // Timer for dialog refresh
   size_t pointing_interval_;
   BotScreen scr_;
   std::list<QImage> unknown_images_;
@@ -128,6 +130,7 @@ class BotDialog : public QDialog
 
  private slots:
   void PointingTick();
+  void UpdateTick();
   void OnClickPosition(int xpos, int ypos);
   void OnGameOver();
   void OnGameComplete();

@@ -70,6 +70,7 @@ BotDialog::BotDialog(QWidget *parent)
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
+  connect(&update_timer_, &QTimer::timeout, this, &BotDialog::UpdateTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameComplete, this, &BotDialog::OnGameComplete, Qt::QueuedConnection);
@@ -103,10 +104,12 @@ BotDialog::BotDialog(QWidget *parent)
   });
   gaming_thread_.reset(gaming_thread);
   emit DoStartUpdate();
+  update_timer_.start(kUpdateTimerInterval);
 }
 
 BotDialog::~BotDialog()
 {
+  update_timer_.stop();
   // Stop hook thread
   if (hook_thread_ && hook_thread_->joinable()) {
     hook_stop();
@@ -257,7 +260,7 @@ void BotDialog::StartPointing(PointingTarget target) {
     PointingCancel();
     // Start new corners request
     pointing_interval_ = 0;
-    pointing_timer_.start(kTimerInterval);
+    pointing_timer_.start(kPointingTimerInterval);
     UnhookMouseByTimeout();
     pointing_target_ = target;
   }
@@ -514,13 +517,17 @@ void BotDialog::UpdateUnknownImages() {
 }
 
 void BotDialog::PointingTick() {
-  pointing_interval_ += kTimerInterval;
+  pointing_interval_ += kPointingTimerInterval;
   if (pointing_interval_ >= kCornersTimeout) {
     PointingCancel();
     return;
   }
   int progress = int(double(pointing_interval_) / kCornersTimeout * kProgressScale);
   ui_->CornersBar->setValue(progress);
+}
+
+void BotDialog::UpdateTick() {
+  ShowCornerImages();
 }
 
 void BotDialog::OnClickPosition(int xpos, int ypos) {
