@@ -179,8 +179,8 @@ void BotDialog::ShowCornerImages() {
   QImage top_right;
   QPixmap top_right_pixel;
   scr_.GetImageByPosition(0, col_amount - 1, top_right);
-  FormImage(top_left, top_left_pixel);
-  ui_->cell_top_right_->setPixmap(top_left_pixel);
+  FormImage(top_right, top_right_pixel);
+  ui_->cell_top_right_->setPixmap(top_right_pixel);
   QImage bottom_left;
   QPixmap bottom_left_pixel;
   scr_.GetImageByPosition(row_amount - 1, 0, bottom_left);
@@ -189,7 +189,7 @@ void BotDialog::ShowCornerImages() {
   QImage bottom_right;
   QPixmap bottom_right_pixel;
   scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right);
-  FormImage(bottom_left, bottom_right_pixel);
+  FormImage(bottom_right, bottom_right_pixel);
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
 }
 

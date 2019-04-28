@@ -66,7 +66,7 @@ class BotDialog : public QDialog
   const char kClosedCellSymbol = '.';
   const unsigned int kDefaultStartIndex = 0;
   const unsigned int kDefaultFinishIndex = 99999;
-  const int kUpdateTimerInterval = 200;
+  const int kUpdateTimerInterval = 800;
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
