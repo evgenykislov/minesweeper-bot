@@ -188,9 +188,14 @@ void BotDialog::ShowCornerImages() {
   ui_->cell_bottom_left_->setPixmap(bottom_left_pixel);
   QImage bottom_right;
   QPixmap bottom_right_pixel;
-  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right);
+  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right); // TODO check return
   FormImage(bottom_right, bottom_right_pixel);
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
+  QImage restart;
+  QPixmap restart_pixel;
+  scr_.GetRestartImage(restart); // TODO check return
+  FormImage(restart, restart_pixel);
+  ui_->cell_restart_->setPixmap(restart_pixel);
 }
 
 void BotDialog::StopGame() {
