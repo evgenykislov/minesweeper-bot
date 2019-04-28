@@ -136,6 +136,24 @@ bool BotScreen::GetImageByPosition(unsigned int row, unsigned int col, QImage& i
   return true;
 }
 
+bool BotScreen::GetRestartImage(QImage& image) {
+  QPoint p1, p2;
+  {
+    lock_guard<mutex> locker(parameters_lock_);
+    p1 = restart_point_;
+  }
+  p2 = p1;
+  p1.rx() -= kRestartImageSize / 2;
+  p1.ry() -= kRestartImageSize / 2;
+  p2.rx() += kRestartImageSize / 2;
+  p2.ry() += kRestartImageSize / 2;
+  QScreen *screen = QGuiApplication::primaryScreen();
+  if (!screen) { return false; }
+  auto pixmap = screen->grabWindow(0);
+  image = pixmap.copy(QRect(p1, p2)).toImage();
+  return true;
+}
+
 void BotScreen::GetUnknownImages(std::list<QImage>& images) {
   lock_guard<mutex> locker(parameters_lock_);
   images.swap(unknown_images_);

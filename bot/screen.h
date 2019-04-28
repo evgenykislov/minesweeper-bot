@@ -39,6 +39,7 @@ public:
     , bool& error_unknown_images
     , bool& error_timeout);
   bool GetImageByPosition(unsigned int row, unsigned int col, QImage& image);
+  bool GetRestartImage(QImage& image);
   void GetUnknownImages(std::list<QImage>& images);
   void SetImageType(const QImage& image, char cell_type);
   void MakeStep(unsigned int row, unsigned int col);
@@ -51,6 +52,7 @@ public:
   BotScreen& operator=(BotScreen&&) = delete;
 
   const float kSnapshotInterval = 0.02; // Interval of screen snapshoting, in seconds
+  const unsigned int kRestartImageSize = 24;
 
   const char kGameOverCell = 'x';
   QRect user_field_rect_; // Rect of field, entered by user

@@ -280,6 +280,32 @@
     <string>S</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="stop_btn_">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>240</y>
+     <width>83</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="cell_restart_">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>20</y>
+     <width>64</width>
+     <height>64</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -435,6 +461,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>stop_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnStop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>71</x>
+     <y>253</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>295</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnCornersBtn()</slot>
@@ -447,5 +489,6 @@
   <slot>OnBottomRightCorner()</slot>
   <slot>OnRestartPoint()</slot>
   <slot>OnSettings()</slot>
+  <slot>OnStop()</slot>
  </slots>
 </ui>

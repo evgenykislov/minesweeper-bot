@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <fstream>
@@ -23,19 +24,26 @@ using namespace std;
 using namespace std::chrono;
 
 function<void(int xpos, int ypos)> hook_lambda_;
+atomic<int64_t> mouse_move_time_; // Time last mouse move
+atomic<int64_t> mouse_unhook_timeout_; // Time of mouse unhook (for automatic movement, etc)
+
 
 void HookHandle(uiohook_event* const event) {
   assert(hook_lambda_);
   if (!event) {
     return;
   }
-  if (event->type != EVENT_MOUSE_CLICKED) {
-    return;
+  int64_t cur_time = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+  if (cur_time > mouse_unhook_timeout_) {
+    if (event->type == EVENT_MOUSE_MOVED) {
+      mouse_move_time_ = cur_time;
+    }
+    else if (event->type == EVENT_MOUSE_CLICKED) {
+      if (event->data.mouse.button == MOUSE_BUTTON1) {
+        hook_lambda_(event->data.mouse.x, event->data.mouse.y);
+      }
+    }
   }
-  if (event->data.mouse.button != MOUSE_BUTTON1) {
-    return;
-  }
-  hook_lambda_(event->data.mouse.x, event->data.mouse.y);
 }
 
 
@@ -49,20 +57,24 @@ BotDialog::BotDialog(QWidget *parent)
   , ui_(new Ui::BotDialog)
   , pointing_interval_(0)
   , pointing_target_(kEmptyTarget)
-  , save_counter_(0)
+  , save_counter_(kDefaultStartIndex)
   , finish_gaming_(false)
   , resume_gaming_(false)
+  , stop_gaming_(false)
   , auto_restart_game_(false)
   , save_steps_(false)
-  , start_index_(0)
+  , finish_index_(kDefaultFinishIndex)
 {
+  mouse_unhook_timeout_ = mouse_move_time_ = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
   ui_->CornersLbl->hide();
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
+  connect(&update_timer_, &QTimer::timeout, this, &BotDialog::UpdateTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameComplete, this, &BotDialog::OnGameComplete, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoGameStoppedByUser, this, &BotDialog::OnGameStoppedByUser, Qt::QueuedConnection);
   connect(ui_->row_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->col_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
   connect(ui_->mines_edt_, &LineEditWFocus::LoseFocus, this, &BotDialog::LoseFocus, Qt::QueuedConnection);
@@ -70,7 +82,13 @@ BotDialog::BotDialog(QWidget *parent)
   hook_lambda_ = [this](int xpos, int ypos) {
     emit DoClickPosition(xpos, ypos);
   };
+
+  // TODO barrier
   hook_set_dispatch_proc(HookHandle);
+  hook_thread_.reset(new std::thread([](){
+    hook_run();
+  }));
+
   LoadSettings();
 
   QFile model_file("model.bin");
@@ -86,10 +104,18 @@ BotDialog::BotDialog(QWidget *parent)
   });
   gaming_thread_.reset(gaming_thread);
   emit DoStartUpdate();
+  update_timer_.start(kUpdateTimerInterval);
 }
 
 BotDialog::~BotDialog()
 {
+  update_timer_.stop();
+  // Stop hook thread
+  if (hook_thread_ && hook_thread_->joinable()) {
+    hook_stop();
+    hook_thread_->join();
+  }
+  hook_thread_.reset();
   // Stop gaming thread
   if (gaming_thread_ && gaming_thread_->joinable()) {
     {
@@ -106,8 +132,7 @@ BotDialog::~BotDialog()
 }
 
 void BotDialog::OnCornersBtn() {
-  pointing_target_ = kTopLeftCorner;
-  StartPointing();
+  StartPointing(kTopLeftCorner);
 }
 
 void BotDialog::CornersCompleted() {
@@ -154,8 +179,8 @@ void BotDialog::ShowCornerImages() {
   QImage top_right;
   QPixmap top_right_pixel;
   scr_.GetImageByPosition(0, col_amount - 1, top_right);
-  FormImage(top_left, top_left_pixel);
-  ui_->cell_top_right_->setPixmap(top_left_pixel);
+  FormImage(top_right, top_right_pixel);
+  ui_->cell_top_right_->setPixmap(top_right_pixel);
   QImage bottom_left;
   QPixmap bottom_left_pixel;
   scr_.GetImageByPosition(row_amount - 1, 0, bottom_left);
@@ -163,9 +188,14 @@ void BotDialog::ShowCornerImages() {
   ui_->cell_bottom_left_->setPixmap(bottom_left_pixel);
   QImage bottom_right;
   QPixmap bottom_right_pixel;
-  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right);
-  FormImage(bottom_left, bottom_right_pixel);
+  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right); // TODO check return
+  FormImage(bottom_right, bottom_right_pixel);
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
+  QImage restart;
+  QPixmap restart_pixel;
+  scr_.GetRestartImage(restart); // TODO check return
+  FormImage(restart, restart_pixel);
+  ui_->cell_restart_->setPixmap(restart_pixel);
 }
 
 void BotDialog::StopGame() {
@@ -182,6 +212,10 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
     lock_guard<mutex> locker(save_lock_);
     if (!save_steps_) {
       // Dont save anything
+      return;
+    }
+    if (save_counter_ > finish_index_) {
+      // All steps were saved
       return;
     }
     folder = save_folder_;
@@ -226,17 +260,14 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
   }
 }
 
-void BotDialog::StartPointing() {
+void BotDialog::StartPointing(PointingTarget target) {
   try {
     PointingCancel();
     // Start new corners request
-    assert(!hook_thread_);
-    assert(pointing_target_ != kEmptyTarget);
-    hook_thread_.reset(new std::thread([](){
-      hook_run();
-    }));
     pointing_interval_ = 0;
-    pointing_timer_.start(kTimerInterval);
+    pointing_timer_.start(kPointingTimerInterval);
+    UnhookMouseByTimeout();
+    pointing_target_ = target;
   }
   catch (exception&) {
     PointingCancel();
@@ -268,7 +299,18 @@ void BotDialog::Gaming() {
         if (finish_gaming_) {
           break;
         }
+        if (stop_gaming_) {
+          stop_gaming_ = false;
+          DoGameStoppedByUser();
+          break;
+        }
       }
+      // Check mouse aren't moved
+      if (!IsMouseIdle()) {
+        this_thread::sleep_for(kMouseIdleRecheckInterval);
+        continue;
+      }
+
       // Get field
       Field field;
       bool game_over;
@@ -306,6 +348,12 @@ void BotDialog::Gaming() {
       // Detect wait, mouse move, etc
 
       // Make step
+      // Check mouse aren't moved
+      if (!IsMouseIdle()) {
+        this_thread::sleep_for(kMouseIdleRecheckInterval);
+        continue;
+      }
+      UnhookMouseByTimeout();
       scr_.MakeStep(row, col);
       // Wait for update complete
       Field next_field;
@@ -368,6 +416,16 @@ void BotDialog::SaveSettings() {
   }
 }
 
+void BotDialog::UnhookMouseByTimeout() {
+  int64_t tick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+  mouse_unhook_timeout_ = tick + kWaitMouseProcessing;
+}
+
+bool BotDialog::IsMouseIdle() {
+  int64_t tick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+  return (tick - mouse_move_time_.load()) > kMouseIdleInterval;
+}
+
 void BotDialog::OnRun() {
   SaveSettings();
   {
@@ -409,38 +467,36 @@ void BotDialog::OnBottomField() {
 }
 
 void BotDialog::OnBottomRightCorner() {
-  pointing_target_ = kBottomRightCorner;
-  StartPointing();
+  StartPointing(kBottomRightCorner);
 }
 
 void BotDialog::OnRestartPoint() {
-  pointing_target_ = kRestartButton;
-  StartPointing();
+  StartPointing(kRestartButton);
 }
 
 void BotDialog::OnSettings() {
   SettingsDialog dlg(this);
   {
     lock_guard<mutex> locker(save_lock_);
-    dlg.Set(auto_restart_game_, save_steps_, save_folder_, start_index_);
+    dlg.Set(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
   }
   if (dlg.exec() == QDialog::Accepted) {
     {
       lock_guard<mutex> locker(save_lock_);
-      dlg.Get(auto_restart_game_, save_steps_, save_folder_, start_index_);
-      save_counter_ = start_index_;
+      dlg.Get(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
     }
     SaveSettings();
   }
 }
 
+void BotDialog::OnStop() {
+  unique_lock<mutex> locker(gaming_lock_);
+  stop_gaming_ = true;
+  gaming_stopper_.notify_one();
+}
+
 void BotDialog::PointingCancel() {
   pointing_timer_.stop();
-  if (hook_thread_ && hook_thread_->joinable()) {
-    hook_stop();
-    hook_thread_->join();
-  }
-  hook_thread_.reset();
 }
 
 void BotDialog::ShowUnknownImages() {
@@ -466,13 +522,17 @@ void BotDialog::UpdateUnknownImages() {
 }
 
 void BotDialog::PointingTick() {
-  pointing_interval_ += kTimerInterval;
+  pointing_interval_ += kPointingTimerInterval;
   if (pointing_interval_ >= kCornersTimeout) {
     PointingCancel();
     return;
   }
   int progress = int(double(pointing_interval_) / kCornersTimeout * kProgressScale);
   ui_->CornersBar->setValue(progress);
+}
+
+void BotDialog::UpdateTick() {
+  ShowCornerImages();
 }
 
 void BotDialog::OnClickPosition(int xpos, int ypos) {
@@ -493,13 +553,13 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
       restart_point_ = point;
       scr_.SetRestartPoint(point);
       break;
-    default:
-      assert(false);
   }
+  pointing_target_ = kEmptyTarget;
 }
 
 void BotDialog::OnGameOver() {
   if (auto_restart_game_) {
+    UnhookMouseByTimeout();
     scr_.MakeRestart();
     unique_lock<mutex> locker(gaming_lock_);
     resume_gaming_ = true;
@@ -527,4 +587,8 @@ void BotDialog::OnStartUpdate() {
   }
   scr_.SetFieldSize(row_amount_, col_amount_);
   ShowCornerImages();
+}
+
+void BotDialog::OnGameStoppedByUser() {
+  // TODO
 }
