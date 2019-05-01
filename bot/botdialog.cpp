@@ -19,6 +19,7 @@
 #include "celltypedialog.h"
 #include "ui_botdialog.h"
 #include "settingsdialog.h"
+#include "easylogging++.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -72,6 +73,7 @@ BotDialog::BotDialog(QWidget *parent)
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(&update_timer_, &QTimer::timeout, this, &BotDialog::UpdateTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
+  connect(this, &BotDialog::DoGameStopped, this, &BotDialog::OnGameStopped, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameOver, this, &BotDialog::OnGameOver, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameComplete, this, &BotDialog::OnGameComplete, Qt::QueuedConnection);
   connect(this, &BotDialog::DoGameStoppedByUser, this, &BotDialog::OnGameStoppedByUser, Qt::QueuedConnection);
@@ -199,6 +201,9 @@ void BotDialog::ShowCornerImages() {
 }
 
 void BotDialog::StopGame() {
+  unique_lock<mutex> locker(gaming_lock_);
+  stop_gaming_ = true;
+  gaming_stopper_.notify_one();
 }
 
 void BotDialog::RestartGame() {
@@ -276,15 +281,18 @@ void BotDialog::StartPointing(PointingTarget target) {
 
 void BotDialog::Gaming() {
   // Thread for gaming procedure
+  LOG(INFO) << "Game thread has started";
   unsigned int mines_amount;
   while (true) {
     // Wait for user action (run, restart, etc)
+    LOG(INFO) << "Wait game resume";
     {
       unique_lock<mutex> locker(gaming_lock_);
       gaming_stopper_.wait(locker, [this](){
         return finish_gaming_ || resume_gaming_;
       });
       if (finish_gaming_) {
+        LOG(INFO) << "Game thread finishing";
         break;
       }
       resume_gaming_ = false;
@@ -297,21 +305,25 @@ void BotDialog::Gaming() {
       {
         lock_guard<mutex> locker(gaming_lock_);
         if (finish_gaming_) {
+          LOG(INFO) << "Finishing game" << endl;
           break;
         }
         if (stop_gaming_) {
           stop_gaming_ = false;
+          LOG(INFO) << "Stopping game";
           DoGameStoppedByUser();
           break;
         }
       }
       // Check mouse aren't moved
       if (!IsMouseIdle()) {
+        LOG(INFO) << "Wait for mouse idle";
         this_thread::sleep_for(kMouseIdleRecheckInterval);
         continue;
       }
 
       // Get field
+      LOG(INFO) << "Get field";
       Field field;
       bool game_over;
       bool error_no_screen;
@@ -320,10 +332,12 @@ void BotDialog::Gaming() {
       bool error_timeout;
       scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
       if (error_no_screen || error_no_field || error_unknown_images) {
+        LOG(INFO) << "Game stopped by reason";
         emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
         break;
       }
       if (game_over) {
+        LOG(INFO) << "Game over";
         emit DoGameOver();
         break;
       }
@@ -337,14 +351,16 @@ void BotDialog::Gaming() {
         }
       }
       if (closed_cells_amount <= mines_amount) {
+        LOG(INFO) << "Game complete (all cells are opened)";
         emit DoGameComplete();
         break;
       }
       // Calculate new step
+      LOG(INFO) << "Get new step";
       unsigned int row;
       unsigned int col;
-      bool sure_step;
-      solver.GetStep(field, row, col, sure_step);
+      Classifier::StepAction step;
+      solver.GetStep(field, mines_amount, row, col, step);
       // Detect wait, mouse move, etc
 
       // Make step
@@ -354,7 +370,16 @@ void BotDialog::Gaming() {
         continue;
       }
       UnhookMouseByTimeout();
-      scr_.MakeStep(row, col);
+      switch (step) {
+        case Classifier::kOpenWithSure:
+        case Classifier::kOpenWithProbability:
+          scr_.MakeStep(row, col);
+          break;
+        case Classifier::kMarkAsMine:
+          scr_.MakeMark(row, col);
+        default:
+          assert(false);
+      }
       // Wait for update complete
       Field next_field;
       scr_.GetChangedField(next_field, field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
@@ -371,7 +396,7 @@ void BotDialog::Gaming() {
       }
     }
   }
-
+  LOG(INFO) << "Game thread has finished";
 }
 
 void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_images) {
@@ -490,9 +515,7 @@ void BotDialog::OnSettings() {
 }
 
 void BotDialog::OnStop() {
-  unique_lock<mutex> locker(gaming_lock_);
-  stop_gaming_ = true;
-  gaming_stopper_.notify_one();
+  StopGame();
 }
 
 void BotDialog::PointingCancel() {
@@ -555,6 +578,15 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
       break;
   }
   pointing_target_ = kEmptyTarget;
+}
+
+void BotDialog::OnGameStopped(bool no_screen, bool no_field, bool unknown_images) {
+  if (unknown_images) {
+    ShowUnknownImages();
+    unique_lock<mutex> locker(gaming_lock_);
+    resume_gaming_ = true;
+    gaming_stopper_.notify_one();
+  }
 }
 
 void BotDialog::OnGameOver() {

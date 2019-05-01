@@ -8,10 +8,17 @@
 class ModelTetragonalNeural: public Classifier
 {
  public:
+  struct ProbeValues {
+    float clear_probe;
+    float mine_probe;
+    float unknown_probe;
+  };
+  typedef std::vector<ProbeValues> TestResponse;
+
   ModelTetragonalNeural();
   virtual ~ModelTetragonalNeural();
   virtual bool LoadModel(std::vector<uint8_t>&& data) override;
-  virtual void GetStep(const Field& field, unsigned int& step_row, unsigned int& step_col, bool& sure_step) override;
+  virtual void GetStep(const Field& field, unsigned int mines_amount, unsigned int& step_row, unsigned int& step_col, StepAction& action) override;
   virtual void GetTestResponse(TestResponse& response);
 
  private:

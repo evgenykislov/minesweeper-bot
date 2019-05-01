@@ -132,6 +132,7 @@ class BotDialog : public QDialog
   void PointingTick();
   void UpdateTick();
   void OnClickPosition(int xpos, int ypos);
+  void OnGameStopped(bool no_screen, bool no_field, bool unknown_images);
   void OnGameOver();
   void OnGameComplete();
   void OnStartUpdate();
