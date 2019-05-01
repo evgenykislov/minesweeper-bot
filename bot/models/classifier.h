@@ -23,6 +23,25 @@ class Classifier
   const char kHideCell = '.';
   void GetTestField(Field& field);
 
+  bool IsClosedCell(char cell) { return cell == '.'; }
+  bool IsMineCell(char cell) { return cell == '*'; }
+  bool IsValueCell(char cell, unsigned int& value) {
+    switch (cell) {
+      case '0': value = 0; break;
+      case '1': value = 1; break;
+      case '2': value = 2; break;
+      case '3': value = 3; break;
+      case '4': value = 4; break;
+      case '5': value = 5; break;
+      case '6': value = 6; break;
+      case '7': value = 7; break;
+      case '8': value = 7; break;
+      default:
+        return false;
+    }
+    return true;
+  }
+
  private:
   Classifier(const Classifier&) = delete;
   Classifier(Classifier&&) = delete;

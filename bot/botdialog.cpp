@@ -377,6 +377,7 @@ void BotDialog::Gaming() {
           break;
         case Classifier::kMarkAsMine:
           scr_.MakeMark(row, col);
+          break;
         default:
           assert(false);
       }

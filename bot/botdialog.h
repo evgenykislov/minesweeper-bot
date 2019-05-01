@@ -10,6 +10,7 @@
 
 #include "screen.h"
 #include "models/tetragonal_neural.h"
+#include "models/bruteforce.h"
 
 namespace Ui {
 class BotDialog;
@@ -96,7 +97,8 @@ class BotDialog : public QDialog
   QPoint bottom_right_corner_;
   QPoint restart_point_;
 
-  ModelTetragonalNeural solver;
+  // ModelTetragonalNeural solver;
+  BruteForce solver;
   unsigned int save_counter_;
   // Gaming thread synchronize
   bool finish_gaming_;
