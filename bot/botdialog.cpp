@@ -343,14 +343,18 @@ void BotDialog::Gaming() {
       }
       // Check game completed
       unsigned int closed_cells_amount = 0;
+      unsigned int mark_mines_amount = 0;
       for (auto row_iter = field.begin(); row_iter != field.end(); ++row_iter) {
         for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
           if (*col_iter == kClosedCellSymbol) {
             ++closed_cells_amount;
           }
+          else if (*col_iter == kMineMarkSymbol) {
+            ++mark_mines_amount;
+          }
         }
       }
-      if (closed_cells_amount <= mines_amount) {
+      if ((closed_cells_amount + mark_mines_amount) <= mines_amount) {
         LOG(INFO) << "Game complete (all cells are opened)";
         emit DoGameComplete();
         break;
@@ -361,6 +365,7 @@ void BotDialog::Gaming() {
       unsigned int col;
       Classifier::StepAction step;
       solver.GetStep(field, mines_amount, row, col, step);
+      LOG(INFO) << "Got new step";
       // Detect wait, mouse move, etc
 
       // Make step

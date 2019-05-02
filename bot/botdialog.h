@@ -65,6 +65,7 @@ class BotDialog : public QDialog
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;
   const char kClosedCellSymbol = '.';
+  const char kMineMarkSymbol = '*';
   const unsigned int kDefaultStartIndex = 0;
   const unsigned int kDefaultFinishIndex = 99999;
   const int kUpdateTimerInterval = 800;
