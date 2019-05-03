@@ -166,18 +166,11 @@ void BotScreen::SetImageType(const QImage& image, char cell_type) {
 }
 
 void BotScreen::MakeStep(unsigned int row, unsigned int col) {
-  int left;
-  int top;
-  int screen_id;
-  {
-    lock_guard<mutex> locker(parameters_lock_);
-    left = field_rect_.left() + col * cell_width_ + cell_width_ / 2;
-    top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
-    screen_id = screen_id_;
-  }
-  QWidget* screen = QApplication::desktop()->screen(screen_id);
-  QPoint point(left, top);
-  MakeClick(point);
+  MakeCellClick(row, col, true);
+}
+
+void BotScreen::MakeMark(unsigned int row, unsigned int col) {
+  MakeCellClick(row, col, false);
 }
 
 void BotScreen::MakeRestart() {
@@ -186,7 +179,7 @@ void BotScreen::MakeRestart() {
     lock_guard<mutex> locker(parameters_lock_);
     point = restart_point_;
   }
-  MakeClick(point);
+  MakeClick(point, true);
 }
 
 void BotScreen::RefineRect() {
@@ -213,10 +206,14 @@ void BotScreen::FormatField(Field& field) {
   }
 }
 
-void BotScreen::MakeClick(const QPoint& point) {
+void BotScreen::MakeClick(const QPoint& point, bool left_button) {
+  FakeInput::MouseButton button = FakeInput::Mouse_Left;
+  if (!left_button) {
+    button = FakeInput::Mouse_Right;
+  }
   FakeInput::Mouse::moveTo(point.x(), point.y());
-  FakeInput::Mouse::pressButton(FakeInput::Mouse_Left);
-  FakeInput::Mouse::releaseButton(FakeInput::Mouse_Left);
+  FakeInput::Mouse::pressButton(button);
+  FakeInput::Mouse::releaseButton(button);
 }
 
 void BotScreen::GetField(Field& field_1
@@ -279,6 +276,7 @@ void BotScreen::GetField(Field& field_1
       unknown_images.push_back(cell);
     }
   }
+  error_unknown_images = !unknown_images.empty();
   if (error_screen_absent || error_field_undetected || error_unknown_images) {
     field_1.clear();
   }
@@ -286,4 +284,19 @@ void BotScreen::GetField(Field& field_1
     lock_guard<mutex> locker(parameters_lock_);
     swap(unknown_images_, unknown_images);
   }
+}
+
+void BotScreen::MakeCellClick(unsigned int row, unsigned int col, bool left_button) {
+  int left;
+  int top;
+  int screen_id;
+  {
+    lock_guard<mutex> locker(parameters_lock_);
+    left = field_rect_.left() + col * cell_width_ + cell_width_ / 2;
+    top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
+    screen_id = screen_id_;
+  }
+  QWidget* screen = QApplication::desktop()->screen(screen_id);
+  QPoint point(left, top);
+  MakeClick(point, left_button);
 }

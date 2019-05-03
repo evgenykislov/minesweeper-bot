@@ -43,6 +43,7 @@ public:
   void GetUnknownImages(std::list<QImage>& images);
   void SetImageType(const QImage& image, char cell_type);
   void MakeStep(unsigned int row, unsigned int col);
+  void MakeMark(unsigned int row, unsigned int col);
   void MakeRestart();
 
  private:
@@ -71,13 +72,13 @@ public:
 
   void RefineRect();
   void FormatField(Field& field); //!< Clear field and set right format (rows, columns)
-  void MakeClick(const QPoint& point);
+  void MakeClick(const QPoint& point, bool left_button);
   void GetField(Field& field
     , bool& game_over
     , bool& error_screen_absent
     , bool& error_field_undetected
     , bool& error_unknown_images);
-
+  void MakeCellClick(unsigned int row, unsigned int col, bool left_button);
 };
 
 #endif // SCREEN_H

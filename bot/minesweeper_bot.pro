@@ -33,7 +33,9 @@ SOURCES += \
     lineeditwfocus.cpp \
     imagesstorage.cpp \
     field.cpp \
-    settingsdialog.cpp
+    settingsdialog.cpp \
+    easylogging++.cc \
+    models/bruteforce.cpp
 
 HEADERS += \
     botdialog.h \
@@ -45,7 +47,9 @@ HEADERS += \
     imagesstorage.h \
     field.h \
     settingsdialog.h \
-    common.h
+    common.h \
+    easylogging++.h \
+    models/bruteforce.h
 
 FORMS += \
     botdialog.ui \

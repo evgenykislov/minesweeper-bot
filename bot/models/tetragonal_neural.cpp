@@ -27,7 +27,7 @@ bool ModelTetragonalNeural::LoadModel(std::vector<uint8_t>&& data) {
   return true;
 }
 
-void ModelTetragonalNeural::GetStep(const Field& field, unsigned int& step_row, unsigned int& step_col, bool& sure_step) {
+void ModelTetragonalNeural::GetStep(const Field& field, unsigned int, unsigned int& step_row, unsigned int& step_col, StepAction& step) {
   Probabilities probes;
   GetProbabilities(field, probes, true);
   if (probes.empty()) {
@@ -46,12 +46,12 @@ void ModelTetragonalNeural::GetStep(const Field& field, unsigned int& step_row, 
   if (best_clear->value.clear_probe >= kMinClearProbability) {
     step_row = best_clear->row;
     step_col = best_clear->col;
-    sure_step = true;
+    step = kOpenWithSure;
     return;
   }
   step_row = worst_mine->row;
   step_col = worst_mine->col;
-  sure_step = worst_mine->value.mine_probe < kMaxMineProbability;
+  step = worst_mine->value.mine_probe < kMaxMineProbability ? kOpenWithSure : kOpenWithProbability;
 }
 
 void ModelTetragonalNeural::GetTestResponse(TestResponse& response) {

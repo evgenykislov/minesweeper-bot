@@ -10,6 +10,7 @@
 
 #include "screen.h"
 #include "models/tetragonal_neural.h"
+#include "models/bruteforce.h"
 
 namespace Ui {
 class BotDialog;
@@ -64,6 +65,7 @@ class BotDialog : public QDialog
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;
   const char kClosedCellSymbol = '.';
+  const char kMineMarkSymbol = '*';
   const unsigned int kDefaultStartIndex = 0;
   const unsigned int kDefaultFinishIndex = 99999;
   const int kUpdateTimerInterval = 800;
@@ -96,7 +98,8 @@ class BotDialog : public QDialog
   QPoint bottom_right_corner_;
   QPoint restart_point_;
 
-  ModelTetragonalNeural solver;
+  // ModelTetragonalNeural solver;
+  BruteForce solver;
   unsigned int save_counter_;
   // Gaming thread synchronize
   bool finish_gaming_;
@@ -132,6 +135,7 @@ class BotDialog : public QDialog
   void PointingTick();
   void UpdateTick();
   void OnClickPosition(int xpos, int ypos);
+  void OnGameStopped(bool no_screen, bool no_field, bool unknown_images);
   void OnGameOver();
   void OnGameComplete();
   void OnStartUpdate();
