@@ -179,7 +179,7 @@ bool BruteForce::EnumerateCases(const CellPos& value_pos, unsigned int level, un
   }
   unsigned int mines_around = info.fixed_mines_around_ + mine_cells; // Fixed mines (with game field) + closed cells, marked as mines
   unsigned int max_mines = mines_around + closed_cells;
-  if (info.value_ < mines_around && info.value_ > max_mines) {
+  if (info.value_ < mines_around || info.value_ > max_mines) {
     return false;
   }
   if (closed_cells == 0) {
