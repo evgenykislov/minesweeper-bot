@@ -68,7 +68,7 @@ public:
   void FindMaxMines(const Field& field, unsigned int mines_amount);
   void FormSequence(std::vector<CellPos>& seque); // Form sequence of value cells for calculation
   bool EnumerateCases(const CellPos& value_pos, unsigned int level, unsigned int& bomb_bound_cell, unsigned int& clear_bound_cell);
-  void FormRandomStep(const Field& field, unsigned int& step_row, unsigned int& step_col, StepAction& step);
+  void FormRandomStep(const Field& field, unsigned int& step_row, unsigned int& step_col);
   unsigned int GetMinesInCaseCells(const CaseCells& cells);
   void SetCaseCells(const CaseCells& cells);
   void ResetCaseCells(const CaseCells& cells);

@@ -11,14 +11,22 @@ BruteForce::BruteForce() {
 }
 
 void BruteForce::GetStep(const Field& field, unsigned int mines_amount, unsigned int& step_row, unsigned int& step_col, StepAction& step) {
+  FindMaxMines(field, mines_amount);
+  if (max_bound_mines_ == 0) {
+    // All mines has been marked
+    // Open any closed cell
+    FormRandomStep(field, step_row, step_col);
+    step = kOpenWithSure;
+    return;
+  }
   bound_mines_ = 0;
   FormBoundValue(field);
   if (bound_cells_.empty()) {
-    // There aren't bound cells (There aren't opened cells with value (with number))
-    FormRandomStep(field, step_row, step_col, step);
+    // There aren't bound cells (There aren't opened cells with value (with number) or all closed cells has marked bounds)
+    FormRandomStep(field, step_row, step_col);
+    step = kOpenWithProbability;
     return;
   }
-  FindMaxMines(field, mines_amount);
   vector<CellPos> seque;
   FormSequence(seque);
   for (auto iter = seque.begin(); iter != seque.end(); ++iter) {
@@ -127,7 +135,7 @@ void BruteForce::FindMaxMines(const Field& field, unsigned int mines_amount) {
       }
     }
   }
-  if (mines_amount <= marked_mines) {
+  if (mines_amount < marked_mines) {
     throw std::out_of_range("Mines amount is less or equil marked mines");
   }
   max_bound_mines_ = mines_amount - marked_mines;
@@ -243,16 +251,35 @@ bool BruteForce::EnumerateCases(const CellPos& value_pos, unsigned int level, un
   return false;
 }
 
-void BruteForce::FormRandomStep(const Field& field, unsigned int& step_row, unsigned int& step_col, StepAction& step) {
-  step_row = (unsigned int)(1.0 * field.size() * random() / RAND_MAX);
-  if (step_row >= field.size()) {
-    step_row = field.size() - 1;
+void BruteForce::FormRandomStep(const Field& field, unsigned int& step_row, unsigned int& step_col) {
+  unsigned int closed_cells = 0;
+  for (auto& line: field) {
+    for (auto& cell: line) {
+      if (IsClosedCell(cell)) {
+        ++closed_cells;
+      }
+    }
   }
-  step_col = (unsigned int)(1.0 * field[step_row].size() * random() / RAND_MAX);
-  if (step_col >= field[step_row].size()) {
-    step_col = field[step_row].size() - 1;
+  if (closed_cells == 0) {
+    throw out_of_range("There aren't closed cells for random selection");
   }
-  step = kOpenWithProbability;
+  unsigned int index = (unsigned int)(1.0 * closed_cells * random() / RAND_MAX);
+  if (index >= closed_cells) {
+    index = closed_cells;
+  }
+  for (unsigned int row = 0; row < field.size(); ++row) {
+    for (unsigned int col = 0; col < field[row].size(); ++col) {
+      if (IsClosedCell(field[row][col])) {
+        if (index == 0) {
+          step_row = row;
+          step_col = col;
+          return;
+        }
+        --index;
+      }
+    }
+  }
+  assert(false);
 }
 
 unsigned int BruteForce::GetMinesInCaseCells(const CaseCells& cells) {
