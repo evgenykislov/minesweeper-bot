@@ -2,6 +2,7 @@
 #include <fstream>
 
 #include "tetragonal_neural.h"
+#include "bruteforce.h"
 
 using namespace std;
 
@@ -12,9 +13,31 @@ void PrintHelp() {
   cout << "    result - name of file with result from test data" << endl;
 }
 
+bool LoadField(const std::string& file_name, Classifier::Field& field) {
+  field.clear();
+  ifstream file(file_name);
+  if (!file) return false;
+  string line;
+  while(getline(file, line)) {
+    if (line.empty()) { continue; }
+    field.push_back(vector<char>(line.begin(), line.end()));
+  }
+}
+
 int main(int argc, char** argv)
 {
   cout << "Model checker by test data. Evgeny Kislov, 2019" << endl;
+  Classifier::Field field;
+  LoadField("test.txt", field);
+  BruteForce bf;
+  unsigned int row;
+  unsigned int col;
+  Classifier::StepAction step;
+  bf.GetStep(field, 100, row, col, step);
+  int k = 0;
+  return 0;
+
+
   if (argc != 3) {
     PrintHelp();
     return 0;
@@ -40,6 +63,7 @@ int main(int argc, char** argv)
   model_file.read((char*)model_data.data(), model_size);
   ModelTetragonalNeural model;
   model.LoadModel(move(model_data));
+/*
   Classifier::TestResponse response;
   model.GetTestResponse(response);
   ifstream result(argv[2], ios_base::trunc);
@@ -56,5 +80,6 @@ int main(int argc, char** argv)
       , iter->unknown_probe);
     output << output_buffer << endl;
   }
+*/
   return 0;
 }
