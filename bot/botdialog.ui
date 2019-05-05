@@ -7,17 +7,17 @@
     <x>0</x>
     <y>0</y>
     <width>787</width>
-    <height>300</height>
+    <height>315</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>BotDialog</string>
+   <string>Minesweeper Game Bot</string>
   </property>
   <widget class="QPushButton" name="SetCornersBtn">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>40</y>
+     <x>360</x>
+     <y>0</y>
      <width>83</width>
      <height>28</height>
     </rect>
@@ -30,7 +30,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>190</y>
+     <y>200</y>
      <width>83</width>
      <height>28</height>
     </rect>
@@ -42,9 +42,9 @@
   <widget class="QLabel" name="CornersLbl">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>80</y>
-     <width>271</width>
+     <x>360</x>
+     <y>110</y>
+     <width>81</width>
      <height>20</height>
     </rect>
    </property>
@@ -55,9 +55,9 @@
   <widget class="QProgressBar" name="CornersBar">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>110</y>
-     <width>251</width>
+     <x>360</x>
+     <y>140</y>
+     <width>81</width>
      <height>23</height>
     </rect>
    </property>
@@ -66,26 +66,6 @@
    </property>
    <property name="textVisible">
     <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="LineEditWFocus" name="row_edt_">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>150</y>
-     <width>113</width>
-     <height>28</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="LineEditWFocus" name="col_edt_">
-   <property name="geometry">
-    <rect>
-     <x>160</x>
-     <y>150</y>
-     <width>113</width>
-     <height>28</height>
-    </rect>
    </property>
   </widget>
   <widget class="QLabel" name="cell_top_left_">
@@ -138,55 +118,6 @@
    </property>
    <property name="text">
     <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>130</y>
-     <width>62</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Rows</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>160</x>
-     <y>130</y>
-     <width>62</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Columns</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>290</x>
-     <y>130</y>
-     <width>62</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Mines</string>
-   </property>
-  </widget>
-  <widget class="LineEditWFocus" name="mines_edt_">
-   <property name="geometry">
-    <rect>
-     <x>280</x>
-     <y>150</y>
-     <width>113</width>
-     <height>28</height>
-    </rect>
    </property>
   </widget>
   <widget class="QPushButton" name="to_left_btn_">
@@ -244,7 +175,7 @@
   <widget class="QPushButton" name="bottom_right_corner_btn_">
    <property name="geometry">
     <rect>
-     <x>130</x>
+     <x>360</x>
      <y>40</y>
      <width>83</width>
      <height>28</height>
@@ -257,8 +188,8 @@
   <widget class="QPushButton" name="restart_btn_">
    <property name="geometry">
     <rect>
-     <x>230</x>
-     <y>40</y>
+     <x>360</x>
+     <y>80</y>
      <width>83</width>
      <height>28</height>
     </rect>
@@ -305,6 +236,305 @@
    <property name="text">
     <string/>
    </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>291</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>1. Game level</string>
+   </property>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>30</y>
+      <width>50</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Mines</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="LineEditWFocus" name="mines_edt_">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>139</y>
+      <width>50</width>
+      <height>28</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>30</y>
+      <width>50</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Height</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>30</y>
+      <width>50</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Width</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="LineEditWFocus" name="col_edt_">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>139</y>
+      <width>50</width>
+      <height>28</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="LineEditWFocus" name="row_edt_">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>139</y>
+      <width>50</width>
+      <height>28</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="beginner_level_rdb_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>81</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Beginner</string>
+    </property>
+    <attribute name="buttonGroup">
+     <string notr="true">level_btngrp_</string>
+    </attribute>
+   </widget>
+   <widget class="QRadioButton" name="intermediate_level_rdb_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>80</y>
+      <width>105</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Intermediate</string>
+    </property>
+    <attribute name="buttonGroup">
+     <string notr="true">level_btngrp_</string>
+    </attribute>
+   </widget>
+   <widget class="QRadioButton" name="expert_level_rdb_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>71</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Expert</string>
+    </property>
+    <attribute name="buttonGroup">
+     <string notr="true">level_btngrp_</string>
+    </attribute>
+   </widget>
+   <widget class="QRadioButton" name="custom_level_rdb_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>140</y>
+      <width>81</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Custom</string>
+    </property>
+    <attribute name="buttonGroup">
+     <string notr="true">level_btngrp_</string>
+    </attribute>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>50</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>9</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>50</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>10</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>110</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>30</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>50</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>9</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>110</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>16</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_9">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>80</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>40</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_10">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>80</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>16</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>80</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>16</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_12">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>110</y>
+      <width>50</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>99</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
@@ -477,6 +707,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>level_btngrp_</sender>
+   <signal>buttonClicked(int)</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnLevelChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>157</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnCornersBtn()</slot>
@@ -490,5 +736,9 @@
   <slot>OnRestartPoint()</slot>
   <slot>OnSettings()</slot>
   <slot>OnStop()</slot>
+  <slot>OnLevelChanged(int)</slot>
  </slots>
+ <buttongroups>
+  <buttongroup name="level_btngrp_"/>
+ </buttongroups>
 </ui>

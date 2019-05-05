@@ -6,6 +6,7 @@
 #include <thread>
 
 #include <QDialog>
+#include <QSettings>
 #include <QTimer>
 
 #include "screen.h"
@@ -44,6 +45,7 @@ class BotDialog : public QDialog
   void OnRestartPoint();
   void OnSettings();
   void OnStop();
+  void OnLevelChanged(int button_id);
 
  private:
   enum {
@@ -60,6 +62,13 @@ class BotDialog : public QDialog
     kRestartButton,
   };
 
+  enum GameLevelID {
+    kBeginnerLevel = 1,
+    kIntermediateLevel = 2,
+    kExpertLevel = 3,
+    kCustomLevel = 4,
+  };
+
   const float kReceiveFieldTimeout = 0.5;
   const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
@@ -72,10 +81,14 @@ class BotDialog : public QDialog
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
+  unsigned int custom_row_amount_;
+  unsigned int custom_col_amount_;
+  unsigned int custom_mines_amount_;
   unsigned int row_amount_;
   unsigned int col_amount_;
   unsigned int mines_amount_;
   std::mutex mines_amount_lock_;
+
 
   const unsigned int kImageSize = 48;
   const unsigned int kImageSizeWithBorder = 64;
@@ -112,7 +125,9 @@ class BotDialog : public QDialog
   bool save_steps_;
   QString save_folder_;
   unsigned int finish_index_;
+  QSettings settings_;
   std::mutex save_lock_;
+  GameLevelID level_;
 
   void PointingCancel();
   void ShowUnknownImages();
@@ -130,6 +145,8 @@ class BotDialog : public QDialog
   void SaveSettings();
   void UnhookMouseByTimeout();
   bool IsMouseIdle();
+  void UpdateGamingByLevel(); // Update gaming parameters (rows, columns, mines) by level information
+  void SetLevelButtonsStates();
 
  private slots:
   void PointingTick();
