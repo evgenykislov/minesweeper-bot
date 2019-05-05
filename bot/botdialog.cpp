@@ -69,6 +69,9 @@ BotDialog::BotDialog(QWidget *parent)
   , finish_index_(kDefaultFinishIndex)
   , settings_(QSettings::UserScope, ORGANIZATION, APPLICATION)
   , level_(kBeginnerLevel)
+  , save_unexpected_error_steps_(false)
+  , save_steps_before_wrong_mine_(false)
+  , save_probability_steps_(false)
 {
   mouse_unhook_timeout_ = mouse_move_time_ = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
   setWindowFlag(Qt::WindowStaysOnTopHint);
@@ -426,6 +429,9 @@ void BotDialog::LoadSettings() {
     lock_guard<mutex> locker(save_lock_);
     save_steps_ = settings_.value("train/save_steps", false).toBool();
     save_folder_ = settings_.value("train/folder", ".").toString();
+    save_unexpected_error_steps_ = settings_.value("track/unexpected_errors", false).toBool();
+    save_steps_before_wrong_mine_ = settings_.value("track/wrong_mines", false).toBool();
+    save_probability_steps_ = settings_.value("track/probability_steps", false).toBool();
   }
   top_left_corner_ = settings_.value("screen/topleft").toPoint();
   bottom_right_corner_ = settings_.value("screen/bottomright").toPoint();
@@ -445,6 +451,9 @@ void BotDialog::SaveSettings() {
     lock_guard<mutex> locker(save_lock_);
     settings_.setValue("train/save_steps", save_steps_);
     settings_.setValue("train/folder", save_folder_);
+    settings_.setValue("track/unexpected_errors", save_unexpected_error_steps_);
+    settings_.setValue("track/wrong_mines", save_steps_before_wrong_mine_);
+    settings_.setValue("track/probability_steps", save_probability_steps_);
   }
   settings_.setValue("screen/topleft", top_left_corner_);
   settings_.setValue("screen/bottomright", bottom_right_corner_);
@@ -560,12 +569,30 @@ void BotDialog::OnSettings() {
   SettingsDialog dlg(this);
   {
     lock_guard<mutex> locker(save_lock_);
-    dlg.Set(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
+    SettingsDialog::Parameters params;
+    params.auto_restart_game_ = auto_restart_game_;
+    params.save_all_steps_ = save_steps_;
+    params.steps_save_folder_ = save_folder_;
+    params.steps_start_index_ = save_counter_;
+    params.steps_finish_index_ = finish_index_;
+    params.save_unexpected_error_steps_ = save_unexpected_error_steps_;
+    params.save_steps_before_wrong_mine_ = save_steps_before_wrong_mine_;
+    params.save_probability_steps_ = save_probability_steps_;
+    dlg.Set(params);
   }
   if (dlg.exec() == QDialog::Accepted) {
+    SettingsDialog::Parameters params;
+    dlg.Get(params);
     {
       lock_guard<mutex> locker(save_lock_);
-      dlg.Get(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
+      auto_restart_game_ = params.auto_restart_game_;
+      save_steps_ = params.save_all_steps_;
+      save_folder_ = params.steps_save_folder_;
+      save_counter_ = params.steps_start_index_;
+      finish_index_ = params.steps_finish_index_;
+      save_unexpected_error_steps_ = params.save_unexpected_error_steps_;
+      save_steps_before_wrong_mine_ = params.save_steps_before_wrong_mine_;
+      save_probability_steps_ = params.save_probability_steps_;
     }
     SaveSettings();
   }

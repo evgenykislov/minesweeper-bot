@@ -128,6 +128,9 @@ class BotDialog : public QDialog
   QSettings settings_;
   std::mutex save_lock_;
   GameLevelID level_;
+  bool save_unexpected_error_steps_;
+  bool save_steps_before_wrong_mine_;
+  bool save_probability_steps_;
 
   void PointingCancel();
   void ShowUnknownImages();
