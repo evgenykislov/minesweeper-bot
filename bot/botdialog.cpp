@@ -10,7 +10,6 @@
 #include <QDir>
 #include <QFile>
 #include <QPainter>
-#include <QSettings>
 
 #include <uiohook.h>
 
@@ -52,6 +51,9 @@ BotDialog::BotDialog(QWidget *parent)
   : QDialog(parent)
   , top_left_corner_defined_(false)
   , bottom_right_corner_defined_(false)
+  , custom_row_amount_(0)
+  , custom_col_amount_(0)
+  , custom_mines_amount_(0)
   , row_amount_(0)
   , col_amount_(0)
   , mines_amount_(0)
@@ -65,10 +67,16 @@ BotDialog::BotDialog(QWidget *parent)
   , auto_restart_game_(false)
   , save_steps_(false)
   , finish_index_(kDefaultFinishIndex)
+  , settings_(QSettings::UserScope, ORGANIZATION, APPLICATION)
+  , level_(kBeginnerLevel)
 {
   mouse_unhook_timeout_ = mouse_move_time_ = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
   setWindowFlag(Qt::WindowStaysOnTopHint);
   ui_->setupUi(this);
+  ui_->level_btngrp_->setId(ui_->beginner_level_rdb_, kBeginnerLevel);
+  ui_->level_btngrp_->setId(ui_->intermediate_level_rdb_, kIntermediateLevel);
+  ui_->level_btngrp_->setId(ui_->expert_level_rdb_, kExpertLevel);
+  ui_->level_btngrp_->setId(ui_->custom_level_rdb_, kCustomLevel);
   ui_->CornersLbl->hide();
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(&update_timer_, &QTimer::timeout, this, &BotDialog::UpdateTick, Qt::QueuedConnection);
@@ -92,6 +100,9 @@ BotDialog::BotDialog(QWidget *parent)
   }));
 
   LoadSettings();
+  // Update level buttons
+  SetLevelButtonsStates();
+  UpdateGamingByLevel();
 
   QFile model_file("model.bin");
   if (model_file.open(QIODevice::ReadOnly)) {
@@ -410,41 +421,42 @@ void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_im
 }
 
 void BotDialog::LoadSettings() {
-  QSettings settings(QSettings::UserScope, ORGANIZATION, APPLICATION);
-  auto_restart_game_ = settings.value("user/autorestart", false).toBool();
+  auto_restart_game_ = settings_.value("user/autorestart", false).toBool();
   {
     lock_guard<mutex> locker(save_lock_);
-    save_steps_ = settings.value("train/save_steps", false).toBool();
-    save_folder_ = settings.value("train/folder", ".").toString();
+    save_steps_ = settings_.value("train/save_steps", false).toBool();
+    save_folder_ = settings_.value("train/folder", ".").toString();
   }
-  top_left_corner_ = settings.value("screen/topleft").toPoint();
-  bottom_right_corner_ = settings.value("screen/bottomright").toPoint();
-  restart_point_ = settings.value("screen/restart").toPoint();
-  row_amount_ = settings.value("game/row", 0).toUInt();
-  col_amount_ = settings.value("game/col", 0).toUInt();
+  top_left_corner_ = settings_.value("screen/topleft").toPoint();
+  bottom_right_corner_ = settings_.value("screen/bottomright").toPoint();
+  restart_point_ = settings_.value("screen/restart").toPoint();
+  custom_row_amount_ = settings_.value("game/row", 0).toUInt();
+  custom_col_amount_ = settings_.value("game/col", 0).toUInt();
   {
     lock_guard<mutex> locker(mines_amount_lock_);
-    mines_amount_ = settings.value("game/mines", 0).toUInt();
+    level_ = (GameLevelID)(settings_.value("game/level", 1).toUInt());
+    custom_mines_amount_ = settings_.value("game/mines", 0).toUInt();
   }
 }
 
 void BotDialog::SaveSettings() {
-  QSettings settings(QSettings::UserScope, ORGANIZATION, APPLICATION);
-  settings.setValue("user/autorestart", auto_restart_game_);
+  settings_.setValue("user/autorestart", auto_restart_game_);
   {
     lock_guard<mutex> locker(save_lock_);
-    settings.setValue("train/save_steps", save_steps_);
-    settings.setValue("train/folder", save_folder_);
+    settings_.setValue("train/save_steps", save_steps_);
+    settings_.setValue("train/folder", save_folder_);
   }
-  settings.setValue("screen/topleft", top_left_corner_);
-  settings.setValue("screen/bottomright", bottom_right_corner_);
-  settings.setValue("screen/restart", restart_point_);
-  settings.setValue("game/row", row_amount_);
-  settings.setValue("game/col", col_amount_);
+  settings_.setValue("screen/topleft", top_left_corner_);
+  settings_.setValue("screen/bottomright", bottom_right_corner_);
+  settings_.setValue("screen/restart", restart_point_);
+  settings_.setValue("game/row", custom_row_amount_);
+  settings_.setValue("game/col", custom_col_amount_);
   {
     lock_guard<mutex> locker(mines_amount_lock_);
-    settings.setValue("game/mines", mines_amount_);
+    settings_.setValue("game/level", level_);
+    settings_.setValue("game/mines", custom_mines_amount_);
   }
+  settings_.sync();
 }
 
 void BotDialog::UnhookMouseByTimeout() {
@@ -457,6 +469,46 @@ bool BotDialog::IsMouseIdle() {
   return (tick - mouse_move_time_.load()) > kMouseIdleInterval;
 }
 
+void BotDialog::UpdateGamingByLevel() {
+  lock_guard<mutex> locker(mines_amount_lock_);
+  switch (level_) {
+    case kBeginnerLevel:
+      row_amount_ = 9;
+      col_amount_ = 9;
+      mines_amount_ = 10;
+      break;
+    case kIntermediateLevel:
+      row_amount_ = 16;
+      col_amount_ = 16;
+      mines_amount_ = 40;
+      break;
+    case kExpertLevel:
+      row_amount_ = 16;
+      col_amount_ = 30;
+      mines_amount_ = 99;
+      break;
+    case kCustomLevel:
+      row_amount_ = custom_row_amount_;
+      col_amount_ = custom_col_amount_;
+      mines_amount_ = custom_mines_amount_;
+      break;
+    default:
+      // Set beginned level
+      row_amount_ = 9;
+      col_amount_ = 9;
+      mines_amount_ = 10;
+  }
+  scr_.SetFieldSize(row_amount_, col_amount_);
+  ShowCornerImages();
+}
+
+void BotDialog::SetLevelButtonsStates() {
+  ui_->beginner_level_rdb_->setChecked(level_ == kBeginnerLevel);
+  ui_->intermediate_level_rdb_->setChecked(level_ == kIntermediateLevel);
+  ui_->expert_level_rdb_->setChecked(level_ == kExpertLevel);
+  ui_->custom_level_rdb_->setChecked(level_ == kCustomLevel);
+}
+
 void BotDialog::OnRun() {
   SaveSettings();
   {
@@ -467,14 +519,13 @@ void BotDialog::OnRun() {
 }
 
 void BotDialog::LoseFocus() {
-  row_amount_ = ui_->row_edt_->text().toUInt();
-  col_amount_ = ui_->col_edt_->text().toUInt();
+  custom_row_amount_ = ui_->row_edt_->text().toUInt();
+  custom_col_amount_ = ui_->col_edt_->text().toUInt();
   {
     lock_guard<mutex> locker(mines_amount_lock_);
-    mines_amount_ = ui_->mines_edt_->text().toUInt();
+    custom_mines_amount_ = ui_->mines_edt_->text().toUInt();
   }
-  scr_.SetFieldSize(row_amount_, col_amount_);
-  ShowCornerImages();
+  UpdateGamingByLevel();
 }
 
 void BotDialog::OnLeftField() {
@@ -522,6 +573,11 @@ void BotDialog::OnSettings() {
 
 void BotDialog::OnStop() {
   StopGame();
+}
+
+void BotDialog::OnLevelChanged(int button_id) {
+  level_ = (GameLevelID)button_id;
+  UpdateGamingByLevel();
 }
 
 void BotDialog::PointingCancel() {
@@ -617,14 +673,13 @@ void BotDialog::OnStartUpdate() {
   rect.normalized();
   scr_.SetFrameRect(rect);
   scr_.SetRestartPoint(restart_point_);
-  ui_->row_edt_->setText(QString("%1").arg(row_amount_));
-  ui_->col_edt_->setText(QString("%1").arg(col_amount_));
+  ui_->row_edt_->setText(QString("%1").arg(custom_row_amount_));
+  ui_->col_edt_->setText(QString("%1").arg(custom_col_amount_));
   {
     lock_guard<mutex> locker(mines_amount_lock_);
-    ui_->mines_edt_->setText(QString("%1").arg(mines_amount_));
+    ui_->mines_edt_->setText(QString("%1").arg(custom_mines_amount_));
   }
-  scr_.SetFieldSize(row_amount_, col_amount_);
-  ShowCornerImages();
+  UpdateGamingByLevel();
 }
 
 void BotDialog::OnGameStoppedByUser() {
