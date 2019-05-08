@@ -22,6 +22,7 @@ ImagesStorage::ImagesStorage() {
   states_.emplace_back('7', QString::fromUtf8(u8"7"));
   states_.emplace_back('8', QString::fromUtf8(u8"8"));
   states_.emplace_back('x', QString::fromUtf8(u8"death"));
+  states_.emplace_back('-', QString::fromUtf8(u8"wrong"));
   Load();
 }
 

@@ -56,6 +56,7 @@ public:
   const unsigned int kRestartImageSize = 24;
 
   const char kGameOverCell = 'x';
+  const char kWrongMineCell = '-';
   QRect user_field_rect_; // Rect of field, entered by user
   QRect field_rect_; // Rect of field, recalculated for rows/columns
   unsigned int row_amount_;

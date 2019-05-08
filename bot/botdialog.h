@@ -69,15 +69,36 @@ class BotDialog : public QDialog
     kCustomLevel = 4,
   };
 
+  enum StepTypeForSave {
+    kTrainSteps,
+    kUnexpectedErrorSteps,
+    kWrongMineSteps,
+    kProbabilitySteps,
+  };
+
+  struct StepInfo {
+    Field field_;
+    unsigned int row_;
+    unsigned int col_;
+    Classifier::StepAction step_;
+    bool success_;
+    size_t step_index_;
+  };
+
   const float kReceiveFieldTimeout = 0.5;
   const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;
   const char kClosedCellSymbol = '.';
   const char kMineMarkSymbol = '*';
+  const char kWrongMineSymbol = '-';
   const unsigned int kDefaultStartIndex = 0;
   const unsigned int kDefaultFinishIndex = 99999;
   const int kUpdateTimerInterval = 800;
+  const std::string kUnexpectedErrorFolder = u8"unexpected";
+  const std::string kWrongMineFolder = u8"wrongmine";
+  const std::string kProbabilityFolder = u8"probability";
+  const size_t kWrongMineTailSize = 20;
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
@@ -114,6 +135,7 @@ class BotDialog : public QDialog
   // ModelTetragonalNeural solver;
   BruteForce solver;
   unsigned int save_counter_;
+  size_t step_index_;
   // Gaming thread synchronize
   bool finish_gaming_;
   bool resume_gaming_; // Flag to resume game (flag is resetted in game resume)
@@ -140,7 +162,7 @@ class BotDialog : public QDialog
   void ShowCornerImages();
   void StopGame();
   void RestartGame();
-  void SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success);
+  void SaveStep(StepTypeForSave step_type, const StepInfo& info);
   void StartPointing(PointingTarget target);
   void Gaming(); // Thread for gaming procedure
   void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
@@ -150,6 +172,7 @@ class BotDialog : public QDialog
   bool IsMouseIdle();
   void UpdateGamingByLevel(); // Update gaming parameters (rows, columns, mines) by level information
   void SetLevelButtonsStates();
+  bool FieldHasWrongMine(const Field& field, unsigned int& row, unsigned int& col);
 
  private slots:
   void PointingTick();
