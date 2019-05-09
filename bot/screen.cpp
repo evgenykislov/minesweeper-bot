@@ -259,7 +259,7 @@ void BotScreen::GetField(Field& field_1
       // Find cell type
       char cell_type;
       if (storage_.GetStateByImage(cell, cell_type)) {
-        if (cell_type == kGameOverCell) {
+        if (cell_type == kGameOverCell || cell_type == kWrongMineCell) {
           game_over = true;
         }
         field_1[row_index][col_index] = cell_type;

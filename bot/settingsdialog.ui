@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>286</width>
+    <width>557</width>
     <height>372</height>
    </rect>
   </property>
@@ -161,6 +161,58 @@
    <property name="text">
     <string>Auto-restart game</string>
    </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_2">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>50</y>
+     <width>241</width>
+     <height>101</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Error tracking</string>
+   </property>
+   <widget class="QCheckBox" name="unexpected_error_chk_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>171</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save unexpected fault</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="wrong_mine_chk_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>221</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save steps before wrong mine</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="probability_steps_chk_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>171</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save probability steps</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

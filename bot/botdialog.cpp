@@ -61,6 +61,7 @@ BotDialog::BotDialog(QWidget *parent)
   , pointing_interval_(0)
   , pointing_target_(kEmptyTarget)
   , save_counter_(kDefaultStartIndex)
+  , step_index_(0)
   , finish_gaming_(false)
   , resume_gaming_(false)
   , stop_gaming_(false)
@@ -69,6 +70,9 @@ BotDialog::BotDialog(QWidget *parent)
   , finish_index_(kDefaultFinishIndex)
   , settings_(QSettings::UserScope, ORGANIZATION, APPLICATION)
   , level_(kBeginnerLevel)
+  , save_unexpected_error_steps_(false)
+  , save_steps_before_wrong_mine_(false)
+  , save_probability_steps_(false)
 {
   mouse_unhook_timeout_ = mouse_move_time_ = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
   setWindowFlag(Qt::WindowStaysOnTopHint);
@@ -220,36 +224,52 @@ void BotDialog::StopGame() {
 void BotDialog::RestartGame() {
 }
 
-void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int step_col, bool success) {
+void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
   // save field
   QString folder;
-  size_t index;
+  QString file_name;
   {
+    stringstream name_str;
     lock_guard<mutex> locker(save_lock_);
-    if (!save_steps_) {
-      // Dont save anything
-      return;
+    file_name = QString::fromUtf8("field_%09d.txt").arg(step_index_);
+    switch (step_type) {
+      case kTrainSteps:
+        if (!save_steps_) {
+          // Dont save anything
+          return;
+        }
+        if (save_counter_ > finish_index_) {
+          // All steps were saved
+          return;
+        }
+        folder = save_folder_;
+        file_name = QString::fromUtf8("field_%09d.txt").arg(save_counter_);
+        ++save_counter_;
+        break;
+      case kUnexpectedErrorSteps:
+        folder = QString::fromUtf8(kUnexpectedErrorFolder.c_str());
+        break;
+      case kWrongMineSteps:
+        folder = QString::fromUtf8(kWrongMineFolder.c_str());
+        break;
+      case kProbabilitySteps:
+        folder = QString::fromUtf8(kProbabilityFolder.c_str());
+        break;
+      default:
+        assert(false);
     }
-    if (save_counter_ > finish_index_) {
-      // All steps were saved
-      return;
-    }
-    folder = save_folder_;
-    index = save_counter_;
   }
+
   QDir file_folder(folder);
   file_folder.mkpath("."); // TODO check return
   QString folder_name = file_folder.absolutePath() + QDir::separator();
-  stringstream file_name;
-  file_name << "field_" << setfill('0') << setw(5) << index << ".txt";
-  stringstream field_filename;
-  field_filename << folder_name.toStdString() << file_name.str();
-  ofstream field_file(field_filename.str(), ios_base::trunc);
+  QString full_path = folder_name + file_name;
+  ofstream field_file(full_path.toStdString(), ios_base::trunc);
   if (!field_file) {
     // TODO can't save
     return;
   }
-  for (auto row_iter = field.begin(); row_iter != field.end(); ++row_iter) {
+  for (auto row_iter = info.field_.begin(); row_iter != info.field_.end(); ++row_iter) {
     for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
       field_file << *col_iter;
     }
@@ -262,13 +282,13 @@ void BotDialog::SaveStep(const Field& field, unsigned int step_row, unsigned int
   field_file.close();
   // Store predicted step
   stringstream step_filename;
-  step_filename << folder_name.toStdString() << "step_" << setfill('0') << setw(5) << index << ".txt";
+  step_filename << folder_name.toStdString() << "step_" << setfill('0') << setw(5) << step_index_ << ".txt"; // TODO step_index_ ??
   ofstream step_file(step_filename.str(), ios_base::trunc);
   if (!step_file) {
     // TODO can't save
     return;
   }
-  step_file << step_row << " " << step_col << " " << success << " " << file_name.str() << endl;
+  step_file << info.row_ << " " << info.col_ << " " << info.success_ << " " << file_name.toStdString() << endl;
   step_file.close();
   {
     lock_guard<mutex> locker(save_lock_);
@@ -294,6 +314,7 @@ void BotDialog::Gaming() {
   // Thread for gaming procedure
   LOG(INFO) << "Game thread has started";
   unsigned int mines_amount;
+  std::list<StepInfo> wrong_tail; // Tail of steps before wrong mine
   while (true) {
     // Wait for user action (run, restart, etc)
     LOG(INFO) << "Wait game resume";
@@ -332,6 +353,21 @@ void BotDialog::Gaming() {
         this_thread::sleep_for(kMouseIdleRecheckInterval);
         continue;
       }
+      // Get save settings
+      StepInfo step_info;
+      bool save_train_steps;
+      bool save_unexpected_steps;
+      bool save_wrong_mine_steps;
+      bool save_probability_steps;
+      {
+        lock_guard<mutex> locker(save_lock_);
+        save_train_steps = save_steps_;
+        save_unexpected_steps = save_unexpected_error_steps_;
+        save_wrong_mine_steps = save_steps_before_wrong_mine_;
+        save_probability_steps = save_probability_steps_;
+        step_info.step_index_ = step_index_;
+        ++step_index_;
+      }
 
       // Get field
       LOG(INFO) << "Get field";
@@ -348,6 +384,11 @@ void BotDialog::Gaming() {
         break;
       }
       if (game_over) {
+        unsigned int wrong_row;
+        unsigned int wrong_col;
+        if (FieldHasWrongMine(field, wrong_row, wrong_col)) {
+          LOG(INFO) << "Wrong mine detected";
+        }
         LOG(INFO) << "Game over";
         emit DoGameOver();
         break;
@@ -405,9 +446,38 @@ void BotDialog::Gaming() {
         emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
         break;
       }
-      // Save step with state
-      SaveStep(field, row, col, !game_over);
+      step_info.field_ = field;
+      step_info.row_ = row;
+      step_info.col_ = col;
+      step_info.step_ = step;
+      if (save_train_steps) {
+        SaveStep(kTrainSteps, step_info);
+      }
+      if (save_unexpected_steps && step == Classifier::kOpenWithSure && game_over) {
+        SaveStep(kUnexpectedErrorSteps, step_info);
+      }
+      if (save_wrong_mine_steps) {
+        // Store steps before may-be wrong mine
+        wrong_tail.push_back(step_info);
+        while (wrong_tail.size() > kWrongMineTailSize) {
+          wrong_tail.pop_front();
+        }
+        // Save the tail if wrong mine detected
+        unsigned int wrong_row;
+        unsigned int wrong_col;
+        if (FieldHasWrongMine(step_info.field_, wrong_row, wrong_col)) {
+          LOG(INFO) << "Wrong mine detected";
+          while (!wrong_tail.empty()) {
+            SaveStep(kWrongMineSteps, wrong_tail.front());
+            wrong_tail.pop_front();
+          }
+        }
+      }
+      if (save_probability_steps && step == Classifier::kOpenWithProbability) {
+        SaveStep(kProbabilitySteps, step_info);
+      }
       if (game_over) {
+        LOG(INFO) << "Game over";
         emit DoGameOver();
         break;
       }
@@ -426,6 +496,9 @@ void BotDialog::LoadSettings() {
     lock_guard<mutex> locker(save_lock_);
     save_steps_ = settings_.value("train/save_steps", false).toBool();
     save_folder_ = settings_.value("train/folder", ".").toString();
+    save_unexpected_error_steps_ = settings_.value("track/unexpected_errors", false).toBool();
+    save_steps_before_wrong_mine_ = settings_.value("track/wrong_mines", false).toBool();
+    save_probability_steps_ = settings_.value("track/probability_steps", false).toBool();
   }
   top_left_corner_ = settings_.value("screen/topleft").toPoint();
   bottom_right_corner_ = settings_.value("screen/bottomright").toPoint();
@@ -445,6 +518,9 @@ void BotDialog::SaveSettings() {
     lock_guard<mutex> locker(save_lock_);
     settings_.setValue("train/save_steps", save_steps_);
     settings_.setValue("train/folder", save_folder_);
+    settings_.setValue("track/unexpected_errors", save_unexpected_error_steps_);
+    settings_.setValue("track/wrong_mines", save_steps_before_wrong_mine_);
+    settings_.setValue("track/probability_steps", save_probability_steps_);
   }
   settings_.setValue("screen/topleft", top_left_corner_);
   settings_.setValue("screen/bottomright", bottom_right_corner_);
@@ -509,6 +585,19 @@ void BotDialog::SetLevelButtonsStates() {
   ui_->custom_level_rdb_->setChecked(level_ == kCustomLevel);
 }
 
+bool BotDialog::FieldHasWrongMine(const Field& field, unsigned int& row, unsigned int& col) {
+  for (unsigned int r = 0; r < field.size(); ++r) {
+    for (unsigned int c = 0; c < field[r].size(); ++c) {
+      if (field[r][c] == kWrongMineSymbol) {
+        row = r;
+        col = c;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void BotDialog::OnRun() {
   SaveSettings();
   {
@@ -560,12 +649,30 @@ void BotDialog::OnSettings() {
   SettingsDialog dlg(this);
   {
     lock_guard<mutex> locker(save_lock_);
-    dlg.Set(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
+    SettingsDialog::Parameters params;
+    params.auto_restart_game_ = auto_restart_game_;
+    params.save_all_steps_ = save_steps_;
+    params.steps_save_folder_ = save_folder_;
+    params.steps_start_index_ = save_counter_;
+    params.steps_finish_index_ = finish_index_;
+    params.save_unexpected_error_steps_ = save_unexpected_error_steps_;
+    params.save_steps_before_wrong_mine_ = save_steps_before_wrong_mine_;
+    params.save_probability_steps_ = save_probability_steps_;
+    dlg.Set(params);
   }
   if (dlg.exec() == QDialog::Accepted) {
+    SettingsDialog::Parameters params;
+    dlg.Get(params);
     {
       lock_guard<mutex> locker(save_lock_);
-      dlg.Get(auto_restart_game_, save_steps_, save_folder_, save_counter_, finish_index_);
+      auto_restart_game_ = params.auto_restart_game_;
+      save_steps_ = params.save_all_steps_;
+      save_folder_ = params.steps_save_folder_;
+      save_counter_ = params.steps_start_index_;
+      finish_index_ = params.steps_finish_index_;
+      save_unexpected_error_steps_ = params.save_unexpected_error_steps_;
+      save_steps_before_wrong_mine_ = params.save_steps_before_wrong_mine_;
+      save_probability_steps_ = params.save_probability_steps_;
     }
     SaveSettings();
   }

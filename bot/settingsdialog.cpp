@@ -15,41 +15,39 @@ SettingsDialog::~SettingsDialog()
   delete ui_;
 }
 
-void SettingsDialog::Set(bool auto_restart_game, bool save_steps, const QString& save_folder, unsigned int start_index, unsigned int finish_index) {
-  auto_restart_game_ = auto_restart_game;
-  save_steps_ = save_steps;
-  save_folder_ = save_folder;
-  start_index_ = start_index;
-  finish_index_ = finish_index;
-  ui_->autorestart_chk_->setChecked(auto_restart_game_);
-  ui_->save_steps_chk_->setChecked(save_steps_);
-  ui_->save_folder_edt_->setText(save_folder_);
-  ui_->start_index_edt_->setText(QString("%1").arg(start_index_));
-  ui_->finish_index_edt_->setText(QString("%1").arg(finish_index_));
+void SettingsDialog::Set(const Parameters& params) {
+  params_ = params;
+  ui_->autorestart_chk_->setChecked(params_.auto_restart_game_);
+  ui_->save_steps_chk_->setChecked(params_.save_all_steps_);
+  ui_->save_folder_edt_->setText(params_.steps_save_folder_);
+  ui_->start_index_edt_->setText(QString("%1").arg(params_.steps_start_index_));
+  ui_->finish_index_edt_->setText(QString("%1").arg(params_.steps_finish_index_));
+  ui_->unexpected_error_chk_->setChecked(params_.save_unexpected_error_steps_);
+  ui_->wrong_mine_chk_->setChecked(params_.save_steps_before_wrong_mine_);
+  ui_->probability_steps_chk_->setChecked(params_.save_probability_steps_);
 }
 
-void SettingsDialog::Get(bool& auto_restart_game, bool& save_steps, QString& save_folder, unsigned int& start_index, unsigned int& finish_index) {
-  auto_restart_game = auto_restart_game_;
-  save_steps = save_steps_;
-  save_folder = save_folder_;
-  start_index = start_index_;
-  finish_index = finish_index_;
+void SettingsDialog::Get(Parameters& params) {
+  params = params_;
 }
 
 void SettingsDialog::OnAccept() {
-  auto_restart_game_ = ui_->autorestart_chk_->checkState() == Qt::Checked;
-  save_steps_ = ui_->save_steps_chk_->checkState() == Qt::Checked;
-  save_folder_ = ui_->save_folder_edt_->text();
+  params_.auto_restart_game_ = ui_->autorestart_chk_->checkState() == Qt::Checked;
+  params_.save_all_steps_ = ui_->save_steps_chk_->checkState() == Qt::Checked;
+  params_.steps_save_folder_ = ui_->save_folder_edt_->text();
   bool ok;
-  start_index_ = ui_->start_index_edt_->text().toUInt(&ok);
+  params_.steps_start_index_ = ui_->start_index_edt_->text().toUInt(&ok);
   if (!ok) {
     QMessageBox::warning(this, tr("Input error"), tr("Type number in start index field"));
     return;
   }
-  finish_index_ = ui_->finish_index_edt_->text().toUInt(&ok);
+  params_.steps_finish_index_ = ui_->finish_index_edt_->text().toUInt(&ok);
   if (!ok) {
     QMessageBox::warning(this, tr("Input error"), tr("Type number in finish index field"));
     return;
   }
+  params_.save_unexpected_error_steps_ = ui_->unexpected_error_chk_->checkState() == Qt::Checked;
+  params_.save_steps_before_wrong_mine_ = ui_->wrong_mine_chk_->checkState() == Qt::Checked;
+  params_.save_probability_steps_ = ui_->probability_steps_chk_->checkState() == Qt::Checked;
   emit accept();
 }

@@ -15,19 +15,29 @@ class SettingsDialog : public QDialog
   explicit SettingsDialog(QWidget *parent = 0);
   ~SettingsDialog();
 
-  void Set(bool auto_restart_game, bool save_steps, const QString& save_folder, unsigned int start_index, unsigned int finish_index);
-  void Get(bool& auto_restart_game, bool& save_steps, QString& save_folder, unsigned int& start_index, unsigned int& finish_index);
+  struct Parameters {
+    // Gaming
+    bool auto_restart_game_;
+    // Training steps
+    bool save_all_steps_;
+    QString steps_save_folder_;
+    unsigned int steps_start_index_;
+    unsigned int steps_finish_index_;
+    // Error Tracking
+    bool save_unexpected_error_steps_;
+    bool save_steps_before_wrong_mine_;
+    bool save_probability_steps_;
+  };
+
+  void Set(const Parameters& params);
+  void Get(Parameters& params);
 
  public slots:
   void OnAccept();
 
  private:
   Ui::SettingsDialog *ui_;
-  bool auto_restart_game_;
-  bool save_steps_;
-  QString save_folder_;
-  unsigned int start_index_;
-  unsigned int finish_index_;
+  Parameters params_;
 };
 
 #endif // SETTINGSDIALOG_H

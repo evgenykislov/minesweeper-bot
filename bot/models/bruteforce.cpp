@@ -52,7 +52,7 @@ void BruteForce::GetStep(const Field& field, unsigned int mines_amount, unsigned
   unsigned int index = min((unsigned int)(1.0 * bound_cells_.size() * random() / RAND_MAX), (unsigned int)bound_cells_.size());
   step_row = bound_cells_[index].pos_.row_;
   step_col = bound_cells_[index].pos_.col_;
-  step = kOpenWithSure;
+  step = kOpenWithProbability;
 }
 
 void BruteForce::FormBoundValue(const Field& field) {
