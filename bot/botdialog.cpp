@@ -296,6 +296,31 @@ void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
   }
 }
 
+void BotDialog::SaveWrongMine(unsigned int row, unsigned int col) {
+  // save field
+  QString folder;
+  QString file_name;
+  {
+    stringstream name_str;
+    lock_guard<mutex> locker(save_lock_);
+    file_name = QString::fromUtf8("step_%09d_wrong_mine.txt").arg(step_index_);
+    folder = QString::fromUtf8(kWrongMineFolder.c_str());
+  }
+
+  QDir file_folder(folder);
+  file_folder.mkpath("."); // TODO check return
+  QString folder_name = file_folder.absolutePath() + QDir::separator();
+  QString full_path = folder_name + file_name;
+  ofstream file(full_path.toStdString(), ios_base::trunc);
+  if (!file) {
+    // TODO can't save
+    return;
+  }
+  file << "Reason: wrong mine" << endl;
+  file << "row:" << row << endl;
+  file << "col:" << col << endl;
+}
+
 void BotDialog::StartPointing(PointingTarget target) {
   try {
     PointingCancel();
@@ -384,12 +409,19 @@ void BotDialog::Gaming() {
         break;
       }
       if (game_over) {
-        unsigned int wrong_row;
-        unsigned int wrong_col;
-        if (FieldHasWrongMine(field, wrong_row, wrong_col)) {
-          LOG(INFO) << "Wrong mine detected";
+        if (save_wrong_mine_steps) {
+          // Save the tail if wrong mine detected
+          unsigned int wrong_row;
+          unsigned int wrong_col;
+          if (FieldHasWrongMine(field, wrong_row, wrong_col)) {
+            LOG(INFO) << "Wrong mine detected before step";
+            while (!wrong_tail.empty()) {
+              SaveStep(kWrongMineSteps, wrong_tail.front());
+              wrong_tail.pop_front();
+            }
+            SaveWrongMine(wrong_row, wrong_col);
+          }
         }
-        LOG(INFO) << "Game over";
         emit DoGameOver();
         break;
       }
@@ -465,12 +497,13 @@ void BotDialog::Gaming() {
         // Save the tail if wrong mine detected
         unsigned int wrong_row;
         unsigned int wrong_col;
-        if (FieldHasWrongMine(step_info.field_, wrong_row, wrong_col)) {
+        if (FieldHasWrongMine(next_field, wrong_row, wrong_col)) {
           LOG(INFO) << "Wrong mine detected";
           while (!wrong_tail.empty()) {
             SaveStep(kWrongMineSteps, wrong_tail.front());
             wrong_tail.pop_front();
           }
+          SaveWrongMine(wrong_row, wrong_col);
         }
       }
       if (save_probability_steps && step == Classifier::kOpenWithProbability) {
