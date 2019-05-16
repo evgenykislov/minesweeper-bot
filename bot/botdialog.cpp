@@ -183,8 +183,9 @@ void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
 }
 
 void BotDialog::ShowCornerImages() {
-  auto row_amount = ui_->row_edt_->text().toUInt();
-  auto col_amount = ui_->col_edt_->text().toUInt();
+  if (row_amount_ == 0 || col_amount_ == 0) {
+    return;
+  }
   QImage top_left;
   QPixmap top_left_pixel;
   scr_.GetImageByPosition(0, 0, top_left);
@@ -192,17 +193,17 @@ void BotDialog::ShowCornerImages() {
   ui_->cell_top_left_->setPixmap(top_left_pixel);
   QImage top_right;
   QPixmap top_right_pixel;
-  scr_.GetImageByPosition(0, col_amount - 1, top_right);
+  scr_.GetImageByPosition(0, col_amount_ - 1, top_right);
   FormImage(top_right, top_right_pixel);
   ui_->cell_top_right_->setPixmap(top_right_pixel);
   QImage bottom_left;
   QPixmap bottom_left_pixel;
-  scr_.GetImageByPosition(row_amount - 1, 0, bottom_left);
+  scr_.GetImageByPosition(row_amount_ - 1, 0, bottom_left);
   FormImage(bottom_left, bottom_left_pixel);
   ui_->cell_bottom_left_->setPixmap(bottom_left_pixel);
   QImage bottom_right;
   QPixmap bottom_right_pixel;
-  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right); // TODO check return
+  scr_.GetImageByPosition(row_amount_ - 1, col_amount_ - 1, bottom_right); // TODO check return
   FormImage(bottom_right, bottom_right_pixel);
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
   QImage restart;

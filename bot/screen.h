@@ -56,6 +56,8 @@ public:
 
   const char kGameOverCell = 'x';
   const char kWrongMineCell = '-';
+  const unsigned int kMinimalCellsAtDim = 2;
+  const unsigned int kMinimalCellSize = 3;
   QRect user_field_rect_; // Rect of field, entered by user
   QRect field_rect_; // Rect of field, recalculated for rows/columns
   unsigned int row_amount_;
