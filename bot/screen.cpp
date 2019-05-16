@@ -46,14 +46,6 @@ void BotScreen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   RefineRect();
 }
 
-void BotScreen::MoveField(int move_horizontal, int move_vertical) {
-  lock_guard<mutex> locker(parameters_lock_);
-  int to_x = user_field_rect_.left() + move_horizontal;
-  int to_y = user_field_rect_.top() + move_vertical;
-  user_field_rect_.moveTo(to_x, to_y);
-  RefineRect();
-}
-
 void BotScreen::SetScreenID(int id) {
   lock_guard<mutex> locker(parameters_lock_);
   screen_id_ = id;

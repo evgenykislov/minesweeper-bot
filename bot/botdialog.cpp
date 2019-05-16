@@ -157,12 +157,9 @@ void BotDialog::CornersCompleted() {
     return;
   }
   // Apply field frame
-  QRect rect;
-  rect.setTopLeft(top_left_corner_);
-  rect.setBottomRight(bottom_right_corner_);
-  rect.normalized();
   scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-  scr_.SetFrameRect(rect);
+  field_frame_.normalized();
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
@@ -533,8 +530,18 @@ void BotDialog::LoadSettings() {
     save_steps_before_wrong_mine_ = settings_.value("track/wrong_mines", false).toBool();
     save_probability_steps_ = settings_.value("track/probability_steps", false).toBool();
   }
-  top_left_corner_ = settings_.value("screen/topleft").toPoint();
-  bottom_right_corner_ = settings_.value("screen/bottomright").toPoint();
+  QPoint point;
+  point = settings_.value("screen/topleft", kUndefinedPoint).toPoint();
+  if (point != kUndefinedPoint) {
+    field_frame_.setTopLeft(point);
+    top_left_corner_defined_ = true;
+  }
+  point = settings_.value("screen/bottomright", kUndefinedPoint).toPoint();
+  if (point != kUndefinedPoint) {
+    field_frame_.setBottomRight(point);
+    bottom_right_corner_defined_ = true;
+  }
+  field_frame_.normalized();
   restart_point_ = settings_.value("screen/restart").toPoint();
   custom_row_amount_ = settings_.value("game/row", 0).toUInt();
   custom_col_amount_ = settings_.value("game/col", 0).toUInt();
@@ -555,8 +562,12 @@ void BotDialog::SaveSettings() {
     settings_.setValue("track/wrong_mines", save_steps_before_wrong_mine_);
     settings_.setValue("track/probability_steps", save_probability_steps_);
   }
-  settings_.setValue("screen/topleft", top_left_corner_);
-  settings_.setValue("screen/bottomright", bottom_right_corner_);
+  if (top_left_corner_defined_) {
+    settings_.setValue("screen/topleft", field_frame_.topLeft());
+  }
+  if (bottom_right_corner_defined_) {
+    settings_.setValue("screen/bottomright", field_frame_.bottomRight());
+  }
   settings_.setValue("screen/restart", restart_point_);
   settings_.setValue("game/row", custom_row_amount_);
   settings_.setValue("game/col", custom_col_amount_);
@@ -651,22 +662,26 @@ void BotDialog::LoseFocus() {
 }
 
 void BotDialog::OnLeftField() {
-  scr_.MoveField(-1, 0);
+  field_frame_.adjust(-1, 0, -1, 0);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnRightField() {
-  scr_.MoveField(1, 0);
+  field_frame_.adjust(1, 0, 1, 0);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnTopField() {
-  scr_.MoveField(0, -1);
+  field_frame_.adjust(0, -1, 0, -1);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnBottomField() {
-  scr_.MoveField(0, 1);
+  field_frame_.adjust(0, 1, 0, 1);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
@@ -765,12 +780,12 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
   QPoint point(xpos, ypos);
   switch (pointing_target_) {
     case kTopLeftCorner:
-      top_left_corner_ = point;
+      field_frame_.setTopLeft(point);
       top_left_corner_defined_ = true;
       CornersCompleted();
       break;
     case kBottomRightCorner:
-      bottom_right_corner_ = point;
+      field_frame_.setBottomRight(point);
       bottom_right_corner_defined_ = true;
       CornersCompleted();
       break;
@@ -807,11 +822,7 @@ void BotDialog::OnGameComplete() {
 
 void BotDialog::OnStartUpdate() {
   // Set screen frame
-  QRect rect;
-  rect.setTopLeft(top_left_corner_);
-  rect.setBottomRight(bottom_right_corner_);
-  rect.normalized();
-  scr_.SetFrameRect(rect);
+  scr_.SetFrameRect(field_frame_);
   scr_.SetRestartPoint(restart_point_);
   ui_->row_edt_->setText(QString("%1").arg(custom_row_amount_));
   ui_->col_edt_->setText(QString("%1").arg(custom_col_amount_));

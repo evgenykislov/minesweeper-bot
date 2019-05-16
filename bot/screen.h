@@ -18,7 +18,6 @@ public:
   void SetFrameRect(const QRect& rect);
   void SetRestartPoint(const QPoint& point);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
-  void MoveField(int move_horizontal, int move_vertical);
   void SetScreenID(int id);
 
   /*! \brief Get stable field. With thread blocking */

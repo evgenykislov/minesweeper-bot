@@ -99,6 +99,7 @@ class BotDialog : public QDialog
   const std::string kWrongMineFolder = u8"wrongmine";
   const std::string kProbabilityFolder = u8"probability";
   const size_t kWrongMineTailSize = 20;
+  const QPoint kUndefinedPoint = { INT_MIN, INT_MIN };
 
   bool top_left_corner_defined_;
   bool bottom_right_corner_defined_;
@@ -128,8 +129,7 @@ class BotDialog : public QDialog
   std::unique_ptr<std::thread> gaming_thread_;
 
   PointingTarget pointing_target_;
-  QPoint top_left_corner_;
-  QPoint bottom_right_corner_;
+  QRect field_frame_;
   QPoint restart_point_;
 
   // ModelTetragonalNeural solver;
