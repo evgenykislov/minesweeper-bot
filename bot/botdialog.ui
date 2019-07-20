@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>848</width>
+    <width>777</width>
     <height>201</height>
    </rect>
   </property>
@@ -328,7 +328,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>104</y>
+      <y>110</y>
       <width>64</width>
       <height>64</height>
      </rect>
@@ -340,8 +340,8 @@
    <widget class="QLabel" name="cell_bottom_right_">
     <property name="geometry">
      <rect>
-      <x>294</x>
-      <y>104</y>
+      <x>300</x>
+      <y>110</y>
       <width>64</width>
       <height>64</height>
      </rect>
@@ -353,7 +353,7 @@
    <widget class="QLabel" name="cell_top_right_">
     <property name="geometry">
      <rect>
-      <x>294</x>
+      <x>300</x>
       <y>40</y>
       <width>64</width>
       <height>64</height>
@@ -380,7 +380,7 @@
     <property name="geometry">
      <rect>
       <x>150</x>
-      <y>100</y>
+      <y>110</y>
       <width>64</width>
       <height>64</height>
      </rect>
@@ -490,14 +490,18 @@
    <widget class="QPushButton" name="to_bottom_btn_">
     <property name="geometry">
      <rect>
-      <x>150</x>
-      <y>70</y>
-      <width>21</width>
-      <height>28</height>
+      <x>190</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_bottom.png</normaloff>:/res/res/move_bottom.png</iconset>
     </property>
    </widget>
    <widget class="QPushButton" name="to_top_btn_">
@@ -505,38 +509,50 @@
      <rect>
       <x>150</x>
       <y>30</y>
-      <width>21</width>
-      <height>28</height>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_top.png</normaloff>:/res/res/move_top.png</iconset>
     </property>
    </widget>
    <widget class="QPushButton" name="to_left_btn_">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>140</y>
-      <width>31</width>
-      <height>28</height>
+      <x>150</x>
+      <y>70</y>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_left.png</normaloff>:/res/res/move_left.png</iconset>
     </property>
    </widget>
    <widget class="QPushButton" name="to_right_btn_">
     <property name="geometry">
      <rect>
-      <x>80</x>
-      <y>140</y>
-      <width>31</width>
-      <height>28</height>
+      <x>190</x>
+      <y>70</y>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>PushButton</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_right.png</normaloff>:/res/res/move_right.png</iconset>
     </property>
    </widget>
   </widget>
@@ -545,7 +561,7 @@
     <rect>
      <x>690</x>
      <y>10</y>
-     <width>151</width>
+     <width>81</width>
      <height>181</height>
     </rect>
    </property>
@@ -555,40 +571,70 @@
    <widget class="QPushButton" name="run_btn_">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>50</y>
-      <width>83</width>
-      <height>28</height>
+      <x>10</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>Go!</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/start.png</normaloff>:/res/res/start.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
     </property>
    </widget>
    <widget class="QPushButton" name="stop_btn_">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>90</y>
-      <width>83</width>
-      <height>28</height>
+      <x>10</x>
+      <y>70</y>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>Stop</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/stop.png</normaloff>:/res/res/stop.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
     </property>
    </widget>
    <widget class="QPushButton" name="settings_btn_">
     <property name="geometry">
      <rect>
-      <x>70</x>
-      <y>140</y>
-      <width>31</width>
-      <height>28</height>
+      <x>10</x>
+      <y>120</y>
+      <width>36</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="text">
-     <string>S</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/gear.png</normaloff>:/res/res/gear.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
     </property>
    </widget>
   </widget>

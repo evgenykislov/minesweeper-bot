@@ -3,5 +3,12 @@
         <file>res/left_top.png</file>
         <file>res/right_bottom.png</file>
         <file>res/restart.png</file>
+        <file>res/move_bottom.png</file>
+        <file>res/move_left.png</file>
+        <file>res/move_right.png</file>
+        <file>res/move_top.png</file>
+        <file>res/gear.png</file>
+        <file>res/start.png</file>
+        <file>res/stop.png</file>
     </qresource>
 </RCC>
