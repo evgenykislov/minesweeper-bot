@@ -188,7 +188,7 @@ void BotScreen::RefineRect() {
   }
   cell_height_ = (unsigned int)(user_field_rect_.height() / (row_amount_ - 1) + 0.5);
   cell_width_ = (unsigned int)(user_field_rect_.width() / (col_amount_ - 1) + 0.5);
-  field_rect_.setTopLeft(user_field_rect_.topLeft() - QPoint(cell_height_ / 2, cell_width_ / 2));
+  field_rect_.setTopLeft(user_field_rect_.topLeft() - QPoint(cell_width_ / 2, cell_height_ / 2));
   field_rect_.setHeight(cell_height_ * row_amount_);
   field_rect_.setWidth(cell_width_ * col_amount_);
   LOG(INFO) << "Set screen field rect:"
