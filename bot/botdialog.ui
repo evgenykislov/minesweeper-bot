@@ -6,237 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>787</width>
-    <height>315</height>
+    <width>777</width>
+    <height>201</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Minesweeper Game Bot</string>
   </property>
-  <widget class="QPushButton" name="SetCornersBtn">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>0</y>
-     <width>83</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Corners</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="run_btn_">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>200</y>
-     <width>83</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Go!</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="CornersLbl">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>110</y>
-     <width>81</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Click left-top and right-bottom corners</string>
-   </property>
-  </widget>
-  <widget class="QProgressBar" name="CornersBar">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>140</y>
-     <width>81</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="value">
-    <number>0</number>
-   </property>
-   <property name="textVisible">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="cell_top_left_">
-   <property name="geometry">
-    <rect>
-     <x>540</x>
-     <y>100</y>
-     <width>64</width>
-     <height>64</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="cell_bottom_left_">
-   <property name="geometry">
-    <rect>
-     <x>540</x>
-     <y>164</y>
-     <width>64</width>
-     <height>64</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="cell_top_right_">
-   <property name="geometry">
-    <rect>
-     <x>604</x>
-     <y>100</y>
-     <width>64</width>
-     <height>64</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="cell_bottom_right_">
-   <property name="geometry">
-    <rect>
-     <x>604</x>
-     <y>164</y>
-     <width>64</width>
-     <height>64</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="to_left_btn_">
-   <property name="geometry">
-    <rect>
-     <x>230</x>
-     <y>220</y>
-     <width>31</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="to_right_btn_">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>220</y>
-     <width>31</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="to_top_btn_">
-   <property name="geometry">
-    <rect>
-     <x>450</x>
-     <y>10</y>
-     <width>21</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="to_bottom_btn_">
-   <property name="geometry">
-    <rect>
-     <x>450</x>
-     <y>50</y>
-     <width>21</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="bottom_right_corner_btn_">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>40</y>
-     <width>83</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="restart_btn_">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>80</y>
-     <width>83</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="settings_btn_">
-   <property name="geometry">
-    <rect>
-     <x>542</x>
-     <y>270</y>
-     <width>31</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>S</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="stop_btn_">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>240</y>
-     <width>83</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Stop</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="cell_restart_">
-   <property name="geometry">
-    <rect>
-     <x>572</x>
-     <y>36</y>
-     <width>64</width>
-     <height>64</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
@@ -536,6 +312,332 @@
     </property>
    </widget>
   </widget>
+  <widget class="QGroupBox" name="groupBox_2">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>10</y>
+     <width>371</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>2. Game field</string>
+   </property>
+   <widget class="QLabel" name="cell_bottom_left_">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>110</y>
+      <width>64</width>
+      <height>64</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="cell_bottom_right_">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>110</y>
+      <width>64</width>
+      <height>64</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="cell_top_right_">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>40</y>
+      <width>64</width>
+      <height>64</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="cell_top_left_">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>40</y>
+      <width>64</width>
+      <height>64</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="cell_restart_">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>110</y>
+      <width>64</width>
+      <height>64</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="SetCornersBtn">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/left_top.png</normaloff>:/res/res/left_top.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="bottom_right_corner_btn_">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/right_bottom.png</normaloff>:/res/res/right_bottom.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="restart_btn_">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/restart.png</normaloff>:/res/res/restart.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QLabel" name="CornersLbl">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>121</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Click left-top and right-bottom corners</string>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="CornersBar">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>90</y>
+      <width>121</width>
+      <height>8</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>0</number>
+    </property>
+    <property name="textVisible">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="to_bottom_btn_">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_bottom.png</normaloff>:/res/res/move_bottom.png</iconset>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="to_top_btn_">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_top.png</normaloff>:/res/res/move_top.png</iconset>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="to_left_btn_">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>70</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_left.png</normaloff>:/res/res/move_left.png</iconset>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="to_right_btn_">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>70</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/move_right.png</normaloff>:/res/res/move_right.png</iconset>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_3">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>10</y>
+     <width>81</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>3. Run/Stop</string>
+   </property>
+   <widget class="QPushButton" name="run_btn_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/start.png</normaloff>:/res/res/start.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="stop_btn_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/stop.png</normaloff>:/res/res/stop.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="settings_btn_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>120</y>
+      <width>36</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="bot.qrc">
+      <normaloff>:/res/res/gear.png</normaloff>:/res/res/gear.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>32</width>
+      <height>32</height>
+     </size>
+    </property>
+   </widget>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -545,168 +647,10 @@
    <header>lineeditwfocus.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="bot.qrc"/>
+ </resources>
  <connections>
-  <connection>
-   <sender>SetCornersBtn</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnCornersBtn()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>71</x>
-     <y>53</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>199</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>run_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnRun()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>71</x>
-     <y>203</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>199</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>to_left_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnLeftField()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>245</x>
-     <y>233</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>to_right_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnRightField()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>285</x>
-     <y>233</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>to_top_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnTopField()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>460</x>
-     <y>23</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>to_bottom_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnBottomField()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>460</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>bottom_right_corner_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnBottomRightCorner()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>171</x>
-     <y>53</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>restart_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnRestartPoint()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>271</x>
-     <y>53</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>settings_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnSettings()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>557</x>
-     <y>283</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>stop_btn_</sender>
-   <signal>clicked()</signal>
-   <receiver>BotDialog</receiver>
-   <slot>OnStop()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>71</x>
-     <y>253</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>level_btngrp_</sender>
    <signal>buttonClicked(int)</signal>
@@ -720,6 +664,166 @@
     <hint type="destinationlabel">
      <x>393</x>
      <y>157</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>SetCornersBtn</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnCornersBtn()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>337</x>
+     <y>57</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bottom_right_corner_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnBottomRightCorner()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>377</x>
+     <y>57</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>restart_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnRestartPoint()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>417</x>
+     <y>57</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_top_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnTopField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>470</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_bottom_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnBottomField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>470</x>
+     <y>93</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_left_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnLeftField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>365</x>
+     <y>163</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>to_right_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnRightField()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>405</x>
+     <y>163</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>run_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnRun()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>761</x>
+     <y>73</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stop_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnStop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>761</x>
+     <y>113</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>settings_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnSettings()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>775</x>
+     <y>163</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>423</x>
+     <y>100</y>
     </hint>
    </hints>
   </connection>

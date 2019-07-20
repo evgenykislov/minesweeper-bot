@@ -157,12 +157,9 @@ void BotDialog::CornersCompleted() {
     return;
   }
   // Apply field frame
-  QRect rect;
-  rect.setTopLeft(top_left_corner_);
-  rect.setBottomRight(bottom_right_corner_);
-  rect.normalized();
   scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-  scr_.SetFrameRect(rect);
+  field_frame_.normalized();
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
@@ -186,8 +183,9 @@ void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
 }
 
 void BotDialog::ShowCornerImages() {
-  auto row_amount = ui_->row_edt_->text().toUInt();
-  auto col_amount = ui_->col_edt_->text().toUInt();
+  if (row_amount_ == 0 || col_amount_ == 0) {
+    return;
+  }
   QImage top_left;
   QPixmap top_left_pixel;
   scr_.GetImageByPosition(0, 0, top_left);
@@ -195,17 +193,17 @@ void BotDialog::ShowCornerImages() {
   ui_->cell_top_left_->setPixmap(top_left_pixel);
   QImage top_right;
   QPixmap top_right_pixel;
-  scr_.GetImageByPosition(0, col_amount - 1, top_right);
+  scr_.GetImageByPosition(0, col_amount_ - 1, top_right);
   FormImage(top_right, top_right_pixel);
   ui_->cell_top_right_->setPixmap(top_right_pixel);
   QImage bottom_left;
   QPixmap bottom_left_pixel;
-  scr_.GetImageByPosition(row_amount - 1, 0, bottom_left);
+  scr_.GetImageByPosition(row_amount_ - 1, 0, bottom_left);
   FormImage(bottom_left, bottom_left_pixel);
   ui_->cell_bottom_left_->setPixmap(bottom_left_pixel);
   QImage bottom_right;
   QPixmap bottom_right_pixel;
-  scr_.GetImageByPosition(row_amount - 1, col_amount - 1, bottom_right); // TODO check return
+  scr_.GetImageByPosition(row_amount_ - 1, col_amount_ - 1, bottom_right); // TODO check return
   FormImage(bottom_right, bottom_right_pixel);
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
   QImage restart;
@@ -296,6 +294,31 @@ void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
   }
 }
 
+void BotDialog::SaveWrongMine(unsigned int row, unsigned int col) {
+  // save field
+  QString folder;
+  QString file_name;
+  {
+    stringstream name_str;
+    lock_guard<mutex> locker(save_lock_);
+    file_name = QString::fromUtf8("step_%09d_wrong_mine.txt").arg(step_index_);
+    folder = QString::fromUtf8(kWrongMineFolder.c_str());
+  }
+
+  QDir file_folder(folder);
+  file_folder.mkpath("."); // TODO check return
+  QString folder_name = file_folder.absolutePath() + QDir::separator();
+  QString full_path = folder_name + file_name;
+  ofstream file(full_path.toStdString(), ios_base::trunc);
+  if (!file) {
+    // TODO can't save
+    return;
+  }
+  file << "Reason: wrong mine" << endl;
+  file << "row:" << row << endl;
+  file << "col:" << col << endl;
+}
+
 void BotDialog::StartPointing(PointingTarget target) {
   try {
     PointingCancel();
@@ -384,12 +407,19 @@ void BotDialog::Gaming() {
         break;
       }
       if (game_over) {
-        unsigned int wrong_row;
-        unsigned int wrong_col;
-        if (FieldHasWrongMine(field, wrong_row, wrong_col)) {
-          LOG(INFO) << "Wrong mine detected";
+        if (save_wrong_mine_steps) {
+          // Save the tail if wrong mine detected
+          unsigned int wrong_row;
+          unsigned int wrong_col;
+          if (FieldHasWrongMine(field, wrong_row, wrong_col)) {
+            LOG(INFO) << "Wrong mine detected before step";
+            while (!wrong_tail.empty()) {
+              SaveStep(kWrongMineSteps, wrong_tail.front());
+              wrong_tail.pop_front();
+            }
+            SaveWrongMine(wrong_row, wrong_col);
+          }
         }
-        LOG(INFO) << "Game over";
         emit DoGameOver();
         break;
       }
@@ -465,12 +495,13 @@ void BotDialog::Gaming() {
         // Save the tail if wrong mine detected
         unsigned int wrong_row;
         unsigned int wrong_col;
-        if (FieldHasWrongMine(step_info.field_, wrong_row, wrong_col)) {
+        if (FieldHasWrongMine(next_field, wrong_row, wrong_col)) {
           LOG(INFO) << "Wrong mine detected";
           while (!wrong_tail.empty()) {
             SaveStep(kWrongMineSteps, wrong_tail.front());
             wrong_tail.pop_front();
           }
+          SaveWrongMine(wrong_row, wrong_col);
         }
       }
       if (save_probability_steps && step == Classifier::kOpenWithProbability) {
@@ -500,8 +531,18 @@ void BotDialog::LoadSettings() {
     save_steps_before_wrong_mine_ = settings_.value("track/wrong_mines", false).toBool();
     save_probability_steps_ = settings_.value("track/probability_steps", false).toBool();
   }
-  top_left_corner_ = settings_.value("screen/topleft").toPoint();
-  bottom_right_corner_ = settings_.value("screen/bottomright").toPoint();
+  QPoint point;
+  point = settings_.value("screen/topleft", kUndefinedPoint).toPoint();
+  if (point != kUndefinedPoint) {
+    field_frame_.setTopLeft(point);
+    top_left_corner_defined_ = true;
+  }
+  point = settings_.value("screen/bottomright", kUndefinedPoint).toPoint();
+  if (point != kUndefinedPoint) {
+    field_frame_.setBottomRight(point);
+    bottom_right_corner_defined_ = true;
+  }
+  field_frame_.normalized();
   restart_point_ = settings_.value("screen/restart").toPoint();
   custom_row_amount_ = settings_.value("game/row", 0).toUInt();
   custom_col_amount_ = settings_.value("game/col", 0).toUInt();
@@ -522,8 +563,12 @@ void BotDialog::SaveSettings() {
     settings_.setValue("track/wrong_mines", save_steps_before_wrong_mine_);
     settings_.setValue("track/probability_steps", save_probability_steps_);
   }
-  settings_.setValue("screen/topleft", top_left_corner_);
-  settings_.setValue("screen/bottomright", bottom_right_corner_);
+  if (top_left_corner_defined_) {
+    settings_.setValue("screen/topleft", field_frame_.topLeft());
+  }
+  if (bottom_right_corner_defined_) {
+    settings_.setValue("screen/bottomright", field_frame_.bottomRight());
+  }
   settings_.setValue("screen/restart", restart_point_);
   settings_.setValue("game/row", custom_row_amount_);
   settings_.setValue("game/col", custom_col_amount_);
@@ -618,22 +663,26 @@ void BotDialog::LoseFocus() {
 }
 
 void BotDialog::OnLeftField() {
-  scr_.MoveField(-1, 0);
+  field_frame_.adjust(-1, 0, -1, 0);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnRightField() {
-  scr_.MoveField(1, 0);
+  field_frame_.adjust(1, 0, 1, 0);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnTopField() {
-  scr_.MoveField(0, -1);
+  field_frame_.adjust(0, -1, 0, -1);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnBottomField() {
-  scr_.MoveField(0, 1);
+  field_frame_.adjust(0, 1, 0, 1);
+  scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
@@ -732,12 +781,12 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
   QPoint point(xpos, ypos);
   switch (pointing_target_) {
     case kTopLeftCorner:
-      top_left_corner_ = point;
+      field_frame_.setTopLeft(point);
       top_left_corner_defined_ = true;
       CornersCompleted();
       break;
     case kBottomRightCorner:
-      bottom_right_corner_ = point;
+      field_frame_.setBottomRight(point);
       bottom_right_corner_defined_ = true;
       CornersCompleted();
       break;
@@ -774,11 +823,7 @@ void BotDialog::OnGameComplete() {
 
 void BotDialog::OnStartUpdate() {
   // Set screen frame
-  QRect rect;
-  rect.setTopLeft(top_left_corner_);
-  rect.setBottomRight(bottom_right_corner_);
-  rect.normalized();
-  scr_.SetFrameRect(rect);
+  scr_.SetFrameRect(field_frame_);
   scr_.SetRestartPoint(restart_point_);
   ui_->row_edt_->setText(QString("%1").arg(custom_row_amount_));
   ui_->col_edt_->setText(QString("%1").arg(custom_col_amount_));

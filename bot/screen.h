@@ -18,7 +18,6 @@ public:
   void SetFrameRect(const QRect& rect);
   void SetRestartPoint(const QPoint& point);
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
-  void MoveField(int move_horizontal, int move_vertical);
   void SetScreenID(int id);
 
   /*! \brief Get stable field. With thread blocking */
@@ -57,6 +56,8 @@ public:
 
   const char kGameOverCell = 'x';
   const char kWrongMineCell = '-';
+  const unsigned int kMinimalCellsAtDim = 2;
+  const unsigned int kMinimalCellSize = 3;
   QRect user_field_rect_; // Rect of field, entered by user
   QRect field_rect_; // Rect of field, recalculated for rows/columns
   unsigned int row_amount_;

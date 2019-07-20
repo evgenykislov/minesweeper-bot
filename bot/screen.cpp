@@ -9,7 +9,13 @@
 
 #include <fakeinput.hpp>
 
+// Workaround of 'feature' of X11
+#undef None
+
 #include "screen.h"
+
+#include "easylogging++.h"
+
 
 using namespace std;
 using namespace std::chrono;
@@ -43,14 +49,6 @@ void BotScreen::SetFieldSize(unsigned int row_amount, unsigned int col_amount) {
   lock_guard<mutex> locker(parameters_lock_);
   row_amount_ = row_amount;
   col_amount_ = col_amount;
-  RefineRect();
-}
-
-void BotScreen::MoveField(int move_horizontal, int move_vertical) {
-  lock_guard<mutex> locker(parameters_lock_);
-  int to_x = user_field_rect_.left() + move_horizontal;
-  int to_y = user_field_rect_.top() + move_vertical;
-  user_field_rect_.moveTo(to_x, to_y);
   RefineRect();
 }
 
@@ -183,16 +181,23 @@ void BotScreen::MakeRestart() {
 }
 
 void BotScreen::RefineRect() {
-  if (row_amount_ == 0 || col_amount_ == 0) {
+  if (row_amount_ < kMinimalCellsAtDim || col_amount_ < kMinimalCellsAtDim) {
     cell_height_ = 0;
     cell_width_ = 0;
     return;
   }
-  cell_height_ = (unsigned int)(user_field_rect_.height() / row_amount_ + 0.5);
-  cell_width_ = (unsigned int)(user_field_rect_.width() / col_amount_ + 0.5);
-  field_rect_.setTopLeft(user_field_rect_.topLeft());
+  cell_height_ = (unsigned int)(user_field_rect_.height() / (row_amount_ - 1) + 0.5);
+  cell_width_ = (unsigned int)(user_field_rect_.width() / (col_amount_ - 1) + 0.5);
+  field_rect_.setTopLeft(user_field_rect_.topLeft() - QPoint(cell_width_ / 2, cell_height_ / 2));
   field_rect_.setHeight(cell_height_ * row_amount_);
   field_rect_.setWidth(cell_width_ * col_amount_);
+  LOG(INFO) << "Set screen field rect:"
+    << field_rect_.left() << ", "
+    << field_rect_.top() << ", "
+    << field_rect_.right() << ", "
+    << field_rect_.bottom() << ". Cells: "
+    << row_amount_ << ", " << col_amount_;
+
 }
 
 void BotScreen::FormatField(Field& field) {

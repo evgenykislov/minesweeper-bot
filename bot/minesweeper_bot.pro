@@ -56,7 +56,8 @@ FORMS += \
     celltypedialog.ui \
     settingsdialog.ui
 
-RESOURCES +=
+RESOURCES += \
+    bot.qrc
 
 unix:!macx: LIBS += -L/usr/local/lib/ -luiohook -lfakeInput
 
