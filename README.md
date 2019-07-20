@@ -11,3 +11,8 @@ TensorFlow 1.12
 
 
 
+
+Used libraries:
+https://github.com/zuhd-org/easyloggingpp
+
+External libraries:
