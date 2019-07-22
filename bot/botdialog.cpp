@@ -27,6 +27,9 @@ function<void(int xpos, int ypos)> hook_lambda_;
 atomic<int64_t> mouse_move_time_; // Time last mouse move
 atomic<int64_t> mouse_unhook_timeout_; // Time of mouse unhook (for automatic movement, etc)
 
+bool HookLogger(unsigned int level, const char* format, ...) {
+  return true;
+}
 
 void HookHandle(uiohook_event* const event) {
   assert(hook_lambda_);
@@ -82,6 +85,7 @@ BotDialog::BotDialog(QWidget *parent)
   ui_->level_btngrp_->setId(ui_->expert_level_rdb_, kExpertLevel);
   ui_->level_btngrp_->setId(ui_->custom_level_rdb_, kCustomLevel);
   ui_->CornersLbl->hide();
+  ui_->progress_lbl_->hide();
   connect(&pointing_timer_, &QTimer::timeout, this, &BotDialog::PointingTick, Qt::QueuedConnection);
   connect(&update_timer_, &QTimer::timeout, this, &BotDialog::UpdateTick, Qt::QueuedConnection);
   connect(this, &BotDialog::DoClickPosition, this, &BotDialog::OnClickPosition, Qt::QueuedConnection);
@@ -98,6 +102,7 @@ BotDialog::BotDialog(QWidget *parent)
   };
 
   // TODO barrier
+  hook_set_logger_proc(HookLogger); // Set empty logger for disable debug output from uiohook library
   hook_set_dispatch_proc(HookHandle);
   hook_thread_.reset(new std::thread([](){
     hook_run();
@@ -148,11 +153,11 @@ BotDialog::~BotDialog()
   delete ui_;
 }
 
-void BotDialog::OnCornersBtn() {
+void BotDialog::OnTopLeftCorner() {
   StartPointing(kTopLeftCorner);
 }
 
-void BotDialog::CornersCompleted() {
+void BotDialog::UpdateCorners() {
   if (!top_left_corner_defined_ || !bottom_right_corner_defined_) {
     return;
   }
@@ -738,6 +743,7 @@ void BotDialog::OnLevelChanged(int button_id) {
 
 void BotDialog::PointingCancel() {
   pointing_timer_.stop();
+  ui_->progress_lbl_->hide();
 }
 
 void BotDialog::ShowUnknownImages() {
@@ -764,12 +770,18 @@ void BotDialog::UpdateUnknownImages() {
 
 void BotDialog::PointingTick() {
   pointing_interval_ += kPointingTimerInterval;
-  if (pointing_interval_ >= kCornersTimeout) {
+  if (pointing_interval_ >= kPointingTimeout) {
     PointingCancel();
     return;
   }
-  int progress = int(double(pointing_interval_) / kCornersTimeout * kProgressScale);
-  ui_->CornersBar->setValue(progress);
+  int progress_width = int(double(pointing_interval_) / kPointingTimeout * ui_->progress_back_->width());
+  if (progress_width > 0) {
+    ui_->progress_lbl_->show();
+    ui_->progress_lbl_->resize(progress_width, ui_->progress_lbl_->height());
+  }
+  else {
+    ui_->progress_lbl_->hide();
+  }
 }
 
 void BotDialog::UpdateTick() {
@@ -777,18 +789,28 @@ void BotDialog::UpdateTick() {
 }
 
 void BotDialog::OnClickPosition(int xpos, int ypos) {
-  PointingCancel();
   QPoint point(xpos, ypos);
+  auto internal_click_position = mapFromGlobal(point);
+  auto window_rect = rect();
+  if (window_rect.contains(internal_click_position)) {
+    // Click was made inside bot window
+    // Wait for click outside
+    return;
+  }
+  // So, click was made outside bot window
+  PointingCancel();
   switch (pointing_target_) {
     case kTopLeftCorner:
+      LOG(INFO) << "Get top-left corner: " << point.x() << ": " << point.y();
       field_frame_.setTopLeft(point);
       top_left_corner_defined_ = true;
-      CornersCompleted();
+      UpdateCorners();
       break;
     case kBottomRightCorner:
+      LOG(INFO) << "Get bottom-right corner: " << point.x() << ": " << point.y();
       field_frame_.setBottomRight(point);
       bottom_right_corner_defined_ = true;
-      CornersCompleted();
+      UpdateCorners();
       break;
     case kRestartButton:
       restart_point_ = point;

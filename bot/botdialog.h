@@ -34,7 +34,7 @@ class BotDialog : public QDialog
   void DoGameStoppedByUser();
 
  public slots:
-  void OnCornersBtn();
+  void OnTopLeftCorner();
   void OnRun();
   void LoseFocus();
   void OnLeftField();
@@ -50,8 +50,7 @@ class BotDialog : public QDialog
  private:
   enum {
     kPointingTimerInterval = 200,
-    kCornersTimeout = 20000,
-    kProgressScale = 100,
+    kPointingTimeout = 20000,
     kClickAmount = 2,
   };
 
@@ -157,7 +156,7 @@ class BotDialog : public QDialog
   void PointingCancel();
   void ShowUnknownImages();
   void UpdateUnknownImages();
-  void CornersCompleted();
+  void UpdateCorners();
   void FormImage(const QImage& image, QPixmap& pixels);
   void ShowCornerImages();
   void StopGame();
