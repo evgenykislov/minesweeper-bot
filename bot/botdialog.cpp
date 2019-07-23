@@ -193,28 +193,33 @@ void BotDialog::ShowCornerImages() {
   }
   QImage top_left;
   QPixmap top_left_pixel;
-  scr_.GetImageByPosition(0, 0, top_left);
-  FormImage(top_left, top_left_pixel);
+  if (scr_.GetImageByPosition(0, 0, top_left)) {
+    FormImage(top_left, top_left_pixel);
+  }
   ui_->cell_top_left_->setPixmap(top_left_pixel);
   QImage top_right;
   QPixmap top_right_pixel;
-  scr_.GetImageByPosition(0, col_amount_ - 1, top_right);
-  FormImage(top_right, top_right_pixel);
+  if (scr_.GetImageByPosition(0, col_amount_ - 1, top_right)) {
+    FormImage(top_right, top_right_pixel);
+  }
   ui_->cell_top_right_->setPixmap(top_right_pixel);
   QImage bottom_left;
   QPixmap bottom_left_pixel;
-  scr_.GetImageByPosition(row_amount_ - 1, 0, bottom_left);
-  FormImage(bottom_left, bottom_left_pixel);
+  if (scr_.GetImageByPosition(row_amount_ - 1, 0, bottom_left)) {
+    FormImage(bottom_left, bottom_left_pixel);
+  }
   ui_->cell_bottom_left_->setPixmap(bottom_left_pixel);
   QImage bottom_right;
   QPixmap bottom_right_pixel;
-  scr_.GetImageByPosition(row_amount_ - 1, col_amount_ - 1, bottom_right); // TODO check return
-  FormImage(bottom_right, bottom_right_pixel);
+  if (scr_.GetImageByPosition(row_amount_ - 1, col_amount_ - 1, bottom_right)) {
+    FormImage(bottom_right, bottom_right_pixel);
+  }
   ui_->cell_bottom_right_->setPixmap(bottom_right_pixel);
   QImage restart;
   QPixmap restart_pixel;
-  scr_.GetRestartImage(restart); // TODO check return
-  FormImage(restart, restart_pixel);
+  if (scr_.GetRestartImage(restart)) {
+    FormImage(restart, restart_pixel);
+  }
   ui_->cell_restart_->setPixmap(restart_pixel);
 }
 
@@ -668,25 +673,25 @@ void BotDialog::LoseFocus() {
 }
 
 void BotDialog::OnLeftField() {
-  field_frame_.adjust(-1, 0, -1, 0);
+  field_frame_.adjust(1, 0, 0, 0);
   scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnRightField() {
-  field_frame_.adjust(1, 0, 1, 0);
+  field_frame_.adjust(-1, 0, 0, 0);
   scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnTopField() {
-  field_frame_.adjust(0, -1, 0, -1);
+  field_frame_.adjust(0, 1, 0, 0);
   scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::OnBottomField() {
-  field_frame_.adjust(0, 1, 0, 1);
+  field_frame_.adjust(0, -1, 0, 0);
   scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
