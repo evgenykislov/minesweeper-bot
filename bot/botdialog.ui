@@ -471,22 +471,6 @@
      <string>Click left-top and right-bottom corners</string>
     </property>
    </widget>
-   <widget class="QProgressBar" name="CornersBar">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>90</y>
-      <width>121</width>
-      <height>8</height>
-     </rect>
-    </property>
-    <property name="value">
-     <number>0</number>
-    </property>
-    <property name="textVisible">
-     <bool>false</bool>
-    </property>
-   </widget>
    <widget class="QPushButton" name="to_bottom_btn_">
     <property name="geometry">
      <rect>
@@ -555,6 +539,56 @@
       <normaloff>:/res/res/move_right.png</normaloff>:/res/res/move_right.png</iconset>
     </property>
    </widget>
+   <widget class="QLabel" name="progress_lbl_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>91</y>
+      <width>62</width>
+      <height>6</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(114, 159, 207);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="progress_back_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>90</y>
+      <width>121</width>
+      <height>8</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 255);</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <zorder>cell_bottom_left_</zorder>
+   <zorder>cell_bottom_right_</zorder>
+   <zorder>cell_top_right_</zorder>
+   <zorder>cell_top_left_</zorder>
+   <zorder>cell_restart_</zorder>
+   <zorder>SetCornersBtn</zorder>
+   <zorder>bottom_right_corner_btn_</zorder>
+   <zorder>restart_btn_</zorder>
+   <zorder>CornersLbl</zorder>
+   <zorder>to_bottom_btn_</zorder>
+   <zorder>to_top_btn_</zorder>
+   <zorder>to_left_btn_</zorder>
+   <zorder>to_right_btn_</zorder>
+   <zorder>progress_back_</zorder>
+   <zorder>progress_lbl_</zorder>
   </widget>
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
@@ -671,7 +705,7 @@
    <sender>SetCornersBtn</sender>
    <signal>clicked()</signal>
    <receiver>BotDialog</receiver>
-   <slot>OnCornersBtn()</slot>
+   <slot>OnTopLeftCorner()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>337</x>
@@ -829,7 +863,7 @@
   </connection>
  </connections>
  <slots>
-  <slot>OnCornersBtn()</slot>
+  <slot>OnTopLeftCorner()</slot>
   <slot>OnRun()</slot>
   <slot>OnImageClick()</slot>
   <slot>OnTopField()</slot>

@@ -49,7 +49,7 @@ void BruteForce::GetStep(const Field& field, unsigned int mines_amount, unsigned
   }
   // Uh, there aren't right variant/case
   // Random saves us
-  unsigned int index = min((unsigned int)(1.0 * bound_cells_.size() * random() / RAND_MAX), (unsigned int)bound_cells_.size());
+  unsigned int index = min((unsigned int)(1.0 * bound_cells_.size() * rand() / RAND_MAX), (unsigned int)bound_cells_.size());
   step_row = bound_cells_[index].pos_.row_;
   step_col = bound_cells_[index].pos_.col_;
   step = kOpenWithProbability;
@@ -263,7 +263,7 @@ void BruteForce::FormRandomStep(const Field& field, unsigned int& step_row, unsi
   if (closed_cells == 0) {
     throw out_of_range("There aren't closed cells for random selection");
   }
-  unsigned int index = (unsigned int)(1.0 * closed_cells * random() / RAND_MAX);
+  unsigned int index = (unsigned int)(1.0 * closed_cells * rand() / RAND_MAX);
   if (index >= closed_cells) {
     index = closed_cells;
   }
