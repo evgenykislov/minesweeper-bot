@@ -163,15 +163,15 @@ void BotDialog::UpdateCorners() {
   }
   // Apply field frame
   scr_.SetScreenID(QApplication::desktop()->screenNumber(this));
-  field_frame_.normalized();
+  field_frame_ = field_frame_.normalized();
   scr_.SetFrameRect(field_frame_);
   ShowCornerImages();
 }
 
 void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
   // Scale the image to given size
-  auto scaled_image = image.scaled(kImageSize, kImageSize, Qt::KeepAspectRatio);
-  QImage border_image(kImageSizeWithBorder, kImageSizeWithBorder, QImage::Format_RGB888);
+  auto scaled_image = image.scaled((int)kImageSize, (int)kImageSize, Qt::KeepAspectRatio);
+  QImage border_image((int)kImageSizeWithBorder, (int)kImageSizeWithBorder, QImage::Format_RGB888);
   QPainter painter;
   painter.begin(&border_image);
   painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
@@ -552,7 +552,7 @@ void BotDialog::LoadSettings() {
     field_frame_.setBottomRight(point);
     bottom_right_corner_defined_ = true;
   }
-  field_frame_.normalized();
+  field_frame_ = field_frame_.normalized();
   restart_point_ = settings_.value("screen/restart").toPoint();
   custom_row_amount_ = settings_.value("game/row", 0).toUInt();
   custom_col_amount_ = settings_.value("game/col", 0).toUInt();

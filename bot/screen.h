@@ -66,8 +66,8 @@ public:
   QPoint restart_point_;
   std::mutex parameters_lock_;
 
-  int cell_width_;
-  int cell_height_;
+  unsigned int cell_width_;
+  unsigned int cell_height_;
 
   int screen_id_;
   ImagesStorage storage_;
