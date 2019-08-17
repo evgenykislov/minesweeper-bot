@@ -204,8 +204,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>probability_steps_chk_</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>SettingsDialog</receiver>
+   <slot>OnProbabilityChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>375</x>
+     <y>132</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>278</x>
+     <y>115</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnAccept()</slot>
+  <slot>OnProbabilityChanged(int)</slot>
  </slots>
 </ui>

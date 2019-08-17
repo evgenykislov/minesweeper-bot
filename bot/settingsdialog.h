@@ -33,10 +33,13 @@ class SettingsDialog : public QDialog
 
  public slots:
   void OnAccept();
+  void OnProbabilityChanged(int);
 
  private:
   Ui::SettingsDialog *ui_;
   Parameters params_;
+
+  void UpdateChecks();
 };
 
 #endif // SETTINGSDIALOG_H

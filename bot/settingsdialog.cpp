@@ -24,6 +24,7 @@ void SettingsDialog::Set(const Parameters& params) {
   ui_->wrong_mine_chk_->setChecked(params_.save_steps_before_wrong_mine_);
   ui_->probability_steps_chk_->setChecked(params_.save_probability_steps_);
   ui_->full_close_chk_->setChecked(params_.save_fully_closed_steps_);
+  UpdateChecks();
 }
 
 void SettingsDialog::Get(Parameters& params) {
@@ -39,4 +40,12 @@ void SettingsDialog::OnAccept() {
   params_.save_probability_steps_ = ui_->probability_steps_chk_->checkState() == Qt::Checked;
   params_.save_fully_closed_steps_ = ui_->full_close_chk_->checkState() == Qt::Checked;
   emit accept();
+}
+
+void SettingsDialog::OnProbabilityChanged(int) {
+  UpdateChecks();
+}
+
+void SettingsDialog::UpdateChecks() {
+  ui_->full_close_chk_->setEnabled(ui_->probability_steps_chk_->checkState() == Qt::Checked);
 }
