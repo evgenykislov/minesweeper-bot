@@ -51,7 +51,7 @@ public:
   BotScreen& operator=(const BotScreen&) = delete;
   BotScreen& operator=(BotScreen&&) = delete;
 
-  const float kSnapshotInterval = 0.02; // Interval of screen snapshoting, in seconds
+  const float kSnapshotInterval = 0.02f; // Interval of screen snapshoting, in seconds
   const unsigned int kRestartImageSize = 24;
 
   const char kGameOverCell = 'x';
@@ -66,8 +66,8 @@ public:
   QPoint restart_point_;
   std::mutex parameters_lock_;
 
-  int cell_width_;
-  int cell_height_;
+  unsigned int cell_width_;
+  unsigned int cell_height_;
 
   int screen_id_;
   ImagesStorage storage_;
