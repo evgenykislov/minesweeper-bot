@@ -301,7 +301,6 @@ void BotScreen::MakeCellClick(unsigned int row, unsigned int col, bool left_butt
     top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
     screen_id = screen_id_;
   }
-  QWidget* screen = QApplication::desktop()->screen(screen_id);
   QPoint point(left, top);
   MakeClick(point, left_button);
 }

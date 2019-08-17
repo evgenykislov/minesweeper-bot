@@ -91,8 +91,6 @@ class BotDialog : public QDialog
   const char kClosedCellSymbol = '.';
   const char kMineMarkSymbol = '*';
   const char kWrongMineSymbol = '-';
-  const unsigned int kDefaultStartIndex = 0;
-  const unsigned int kDefaultFinishIndex = 99999;
   const int kUpdateTimerInterval = 800;
   const std::string kUnexpectedErrorFolder = u8"unexpected";
   const std::string kWrongMineFolder = u8"wrongmine";
@@ -133,7 +131,6 @@ class BotDialog : public QDialog
 
   // ModelTetragonalNeural solver;
   BruteForce solver;
-  unsigned int save_counter_;
   size_t step_index_;
   // Gaming thread synchronize
   bool finish_gaming_;
@@ -145,13 +142,14 @@ class BotDialog : public QDialog
   bool auto_restart_game_;
   bool save_steps_;
   QString save_folder_;
-  unsigned int finish_index_;
   QSettings settings_;
   std::mutex save_lock_;
   GameLevelID level_;
   bool save_unexpected_error_steps_;
   bool save_steps_before_wrong_mine_;
   bool save_probability_steps_;
+  bool save_fully_closed_steps_;
+  QString unique_mark_; // Unique mark, based on start time
 
   void PointingCancel();
   void ShowUnknownImages();
