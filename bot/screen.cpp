@@ -130,7 +130,7 @@ bool BotScreen::GetImageByPosition(unsigned int row, unsigned int col, QImage& i
   auto field = pixmap.copy(field_rect);
   if (field.size() != field_rect.size()) { return false; }
   if (cell_height == 0 || cell_width == 0) { return false; }
-  image = field.copy(col * cell_width, row * cell_height, cell_width, cell_height).toImage();
+  image = field.copy(int(col) * cell_width, int(row) * cell_height, cell_width, cell_height).toImage();
   return true;
 }
 
@@ -301,7 +301,7 @@ void BotScreen::MakeCellClick(unsigned int row, unsigned int col, bool left_butt
     top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
     screen_id = screen_id_;
   }
-  QWidget* screen = QApplication::desktop()->screen(screen_id);
   QPoint point(left, top);
   MakeClick(point, left_button);
+  ignore = screen_id;
 }

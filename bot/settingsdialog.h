@@ -12,7 +12,7 @@ class SettingsDialog : public QDialog
   Q_OBJECT
 
  public:
-  explicit SettingsDialog(QWidget *parent = 0);
+  explicit SettingsDialog(QWidget *parent = nullptr);
   ~SettingsDialog();
 
   struct Parameters {
@@ -21,12 +21,11 @@ class SettingsDialog : public QDialog
     // Training steps
     bool save_all_steps_;
     QString steps_save_folder_;
-    unsigned int steps_start_index_;
-    unsigned int steps_finish_index_;
     // Error Tracking
     bool save_unexpected_error_steps_;
     bool save_steps_before_wrong_mine_;
     bool save_probability_steps_;
+    bool save_fully_closed_steps_;
   };
 
   void Set(const Parameters& params);
@@ -34,10 +33,13 @@ class SettingsDialog : public QDialog
 
  public slots:
   void OnAccept();
+  void OnProbabilityChanged(int);
 
  private:
   Ui::SettingsDialog *ui_;
   Parameters params_;
+
+  void UpdateChecks();
 };
 
 #endif // SETTINGSDIALOG_H

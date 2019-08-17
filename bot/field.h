@@ -7,7 +7,7 @@ class Field: public std::vector<std::vector<char>>
 {
  public:
   Field();
-
+  bool IsFullClosed();
 
  private:
 };
