@@ -24,11 +24,13 @@
 using namespace std;
 using namespace std::chrono;
 
-function<void(int xpos, int ypos)> hook_lambda_;
-atomic<int64_t> mouse_move_time_; // Time last mouse move
-atomic<int64_t> mouse_unhook_timeout_; // Time of mouse unhook (for automatic movement, etc)
+static function<void(int xpos, int ypos)> hook_lambda_;
+static atomic<int64_t> mouse_move_time_; // Time last mouse move
+static atomic<int64_t> mouse_unhook_timeout_; // Time of mouse unhook (for automatic movement, etc)
 
 bool HookLogger(unsigned int level, const char* format, ...) {
+  ignore = level;
+  ignore = format;
   return true;
 }
 
@@ -118,7 +120,7 @@ BotDialog::BotDialog(QWidget *parent)
   if (model_file.open(QIODevice::ReadOnly)) {
     QByteArray byte_data = model_file.readAll();
     model_file.close();
-    vector<uint8_t> vect_data((uint8_t*)(byte_data.data()), (uint8_t*)(byte_data.data() + byte_data.size()));
+    vector<uint8_t> vect_data(reinterpret_cast<uint8_t*>(byte_data.data()), reinterpret_cast<uint8_t*>(byte_data.data() + byte_data.size()));
     solver.LoadModel(std::move(vect_data));
   }
   // Start gaming thread
@@ -171,15 +173,15 @@ void BotDialog::UpdateCorners() {
 
 void BotDialog::FormImage(const QImage& image, QPixmap& pixels) {
   // Scale the image to given size
-  auto scaled_image = image.scaled(kImageSize, kImageSize, Qt::KeepAspectRatio);
-  QImage border_image(kImageSizeWithBorder, kImageSizeWithBorder, QImage::Format_RGB888);
+  auto scaled_image = image.scaled(int(kImageSize), int(kImageSize), Qt::KeepAspectRatio);
+  QImage border_image(static_cast<int>(kImageSizeWithBorder), static_cast<int>(kImageSizeWithBorder), QImage::Format_RGB888);
   QPainter painter;
   painter.begin(&border_image);
   painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
   painter.setPen(border_linecolor);
   painter.fillRect(border_image.rect(), border_backcolor);
-  for (int y = -kImageSizeWithBorder; y < (int)kImageSizeWithBorder; y += border_line_step) {
-    painter.drawLine(0, y, kImageSizeWithBorder, y + kImageSizeWithBorder);
+  for (int y = -int(kImageSizeWithBorder); y < int(kImageSizeWithBorder); y += int(border_line_step)) {
+    painter.drawLine(0, y, int(kImageSizeWithBorder), y + int(kImageSizeWithBorder));
   }
   assert(kImageSizeWithBorder >= kImageSize);
   unsigned int border_width = (kImageSizeWithBorder - kImageSize) / 2;
@@ -506,7 +508,9 @@ void BotDialog::Gaming() {
         }
       }
       if (save_probability_steps && step == Classifier::kOpenWithProbability) {
-        SaveStep(kProbabilitySteps, step_info);
+        if (save_fully_closed_steps || !step_info.field_.IsFullClosed()) {
+          SaveStep(kProbabilitySteps, step_info);
+        }
       }
       if (game_over) {
         LOG(INFO) << "Game over";
@@ -516,10 +520,6 @@ void BotDialog::Gaming() {
     }
   }
   LOG(INFO) << "Game thread has finished";
-}
-
-void BotDialog::InformGameStopper(bool no_screen, bool no_field, bool unknown_images) {
-
 }
 
 void BotDialog::LoadSettings() {
@@ -544,13 +544,13 @@ void BotDialog::LoadSettings() {
     field_frame_.setBottomRight(point);
     bottom_right_corner_defined_ = true;
   }
-  field_frame_.normalized();
+  field_frame_ = field_frame_.normalized();
   restart_point_ = settings_.value("screen/restart").toPoint();
   custom_row_amount_ = settings_.value("game/row", 0).toUInt();
   custom_col_amount_ = settings_.value("game/col", 0).toUInt();
   {
     lock_guard<mutex> locker(mines_amount_lock_);
-    level_ = (GameLevelID)(settings_.value("game/level", 1).toUInt());
+    level_ = GameLevelID(settings_.value("game/level", 1).toUInt());
     custom_mines_amount_ = settings_.value("game/mines", 0).toUInt();
   }
 }
@@ -616,11 +616,6 @@ void BotDialog::UpdateGamingByLevel() {
       col_amount_ = custom_col_amount_;
       mines_amount_ = custom_mines_amount_;
       break;
-    default:
-      // Set beginned level
-      row_amount_ = 9;
-      col_amount_ = 9;
-      mines_amount_ = 10;
   }
   scr_.SetFieldSize(row_amount_, col_amount_);
   ShowCornerImages();
@@ -733,7 +728,7 @@ void BotDialog::OnStop() {
 }
 
 void BotDialog::OnLevelChanged(int button_id) {
-  level_ = (GameLevelID)button_id;
+  level_ = GameLevelID(button_id);
   UpdateGamingByLevel();
 }
 
@@ -812,11 +807,15 @@ void BotDialog::OnClickPosition(int xpos, int ypos) {
       restart_point_ = point;
       scr_.SetRestartPoint(point);
       break;
+    default:
+      ;
   }
   pointing_target_ = kEmptyTarget;
 }
 
 void BotDialog::OnGameStopped(bool no_screen, bool no_field, bool unknown_images) {
+  ignore = no_screen;
+  ignore = no_field;
   if (unknown_images) {
     ShowUnknownImages();
     unique_lock<mutex> locker(gaming_lock_);

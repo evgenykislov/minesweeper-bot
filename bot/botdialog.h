@@ -163,7 +163,6 @@ class BotDialog : public QDialog
   void SaveWrongMine(unsigned int row, unsigned int col);
   void StartPointing(PointingTarget target);
   void Gaming(); // Thread for gaming procedure
-  void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
   void LoadSettings();
   void SaveSettings();
   void UnhookMouseByTimeout();
