@@ -46,6 +46,7 @@ class BotDialog : public QDialog
   void OnSettings();
   void OnStop();
   void OnLevelChanged(int button_id);
+  void OnAbout();
 
  private:
   enum {
