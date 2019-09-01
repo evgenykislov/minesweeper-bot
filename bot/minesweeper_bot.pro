@@ -32,7 +32,9 @@ SOURCES += \
     field.cpp \
     settingsdialog.cpp \
     easylogging++.cc \
-    models/bruteforce.cpp
+    models/bruteforce.cpp \
+    aboutdialog.cpp \
+    licensesdialog.cpp
 
 HEADERS += \
     botdialog.h \
@@ -46,12 +48,16 @@ HEADERS += \
     settingsdialog.h \
     common.h \
     easylogging++.h \
-    models/bruteforce.h
+    models/bruteforce.h \
+    aboutdialog.h \
+    licensesdialog.h
 
 FORMS += \
     botdialog.ui \
     celltypedialog.ui \
-    settingsdialog.ui
+    settingsdialog.ui \
+    aboutdialog.ui \
+    licensesdialog.ui
 
 RESOURCES += \
     bot.qrc

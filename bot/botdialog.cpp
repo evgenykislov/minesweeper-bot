@@ -16,6 +16,7 @@
 #include "common.h"
 #include "botdialog.h"
 #include "celltypedialog.h"
+#include "aboutdialog.h"
 #include "ui_botdialog.h"
 #include "settingsdialog.h"
 #include "easylogging++.h"
@@ -744,6 +745,11 @@ void BotDialog::OnStop() {
 void BotDialog::OnLevelChanged(int button_id) {
   level_ = (GameLevelID)button_id;
   UpdateGamingByLevel();
+}
+
+void BotDialog::OnAbout() {
+  AboutDialog dlg(this);
+  dlg.exec();
 }
 
 void BotDialog::PointingCancel() {
