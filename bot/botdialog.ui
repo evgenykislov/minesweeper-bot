@@ -659,7 +659,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;a href=&quot;http://www.evgenykislov.com/minesweeper-bot&quot;&gt;www.evgenykislov.com&lt;/a&gt;</string>
+    <string>&lt;a href=&quot;https://www.evgenykislov.com/minesweeper-bot&quot;&gt;www.evgenykislov.com&lt;/a&gt;</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
