@@ -1,3 +1,24 @@
+/* Minesweeper Bot: Cross-platform bot for playing in minesweeper game.
+ * Copyright (C) 2019 Evgeny Kislov.
+ * https://www.evgenykislov.com/minesweeper-bot
+ * https://github.com/evgenykislov/minesweeper-bot
+ *
+ * This file is part of Minesweeper Bot.
+ *
+ * Minesweeper Bot is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Minesweeper Bot is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Minesweeper Bot.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -49,7 +70,7 @@ void BruteForce::GetStep(const Field& field, unsigned int mines_amount, unsigned
   }
   // Uh, there aren't right variant/case
   // Random saves us
-  unsigned int index = min((unsigned int)(1.0 * bound_cells_.size() * random() / RAND_MAX), (unsigned int)bound_cells_.size());
+  unsigned int index = min((unsigned int)(1.0 * bound_cells_.size() * rand() / RAND_MAX), (unsigned int)bound_cells_.size());
   step_row = bound_cells_[index].pos_.row_;
   step_col = bound_cells_[index].pos_.col_;
   step = kOpenWithProbability;
@@ -263,7 +284,7 @@ void BruteForce::FormRandomStep(const Field& field, unsigned int& step_row, unsi
   if (closed_cells == 0) {
     throw out_of_range("There aren't closed cells for random selection");
   }
-  unsigned int index = (unsigned int)(1.0 * closed_cells * random() / RAND_MAX);
+  unsigned int index = (unsigned int)(1.0 * closed_cells * rand() / RAND_MAX);
   if (index >= closed_cells) {
     index = closed_cells;
   }

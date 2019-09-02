@@ -21,10 +21,10 @@
 *.smod
 
 # Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+#*.lai
+#*.la
+#*.a
+#*.lib
 
 # Executables
 *.exe
@@ -59,3 +59,7 @@ bot-release/
 solvers/tetragonal_neural/train/
 
 bot/build-models-Desktop_Qt_5_10_0_GCC_64bit-u041eu0442u043bu0430u0434u043au0430/
+
+build-minesweeper_bot-Desktop_Qt_5_12_4_MinGW_32_bit-Debug/
+
+build-minesweeper_bot-Desktop_Qt_5_12_4_MinGW_32_bit-Release/

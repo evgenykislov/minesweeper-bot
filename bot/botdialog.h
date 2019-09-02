@@ -1,3 +1,24 @@
+/* Minesweeper Bot: Cross-platform bot for playing in minesweeper game.
+ * Copyright (C) 2019 Evgeny Kislov.
+ * https://www.evgenykislov.com/minesweeper-bot
+ * https://github.com/evgenykislov/minesweeper-bot
+ *
+ * This file is part of Minesweeper Bot.
+ *
+ * Minesweeper Bot is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Minesweeper Bot is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Minesweeper Bot.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef BOTDIALOG_H
 #define BOTDIALOG_H
 
@@ -34,7 +55,7 @@ class BotDialog : public QDialog
   void DoGameStoppedByUser();
 
  public slots:
-  void OnCornersBtn();
+  void OnTopLeftCorner();
   void OnRun();
   void LoseFocus();
   void OnLeftField();
@@ -46,12 +67,12 @@ class BotDialog : public QDialog
   void OnSettings();
   void OnStop();
   void OnLevelChanged(int button_id);
+  void OnAbout();
 
  private:
   enum {
     kPointingTimerInterval = 200,
-    kCornersTimeout = 20000,
-    kProgressScale = 100,
+    kPointingTimeout = 20000,
     kClickAmount = 2,
   };
 
@@ -92,8 +113,6 @@ class BotDialog : public QDialog
   const char kClosedCellSymbol = '.';
   const char kMineMarkSymbol = '*';
   const char kWrongMineSymbol = '-';
-  const unsigned int kDefaultStartIndex = 0;
-  const unsigned int kDefaultFinishIndex = 99999;
   const int kUpdateTimerInterval = 800;
   const std::string kUnexpectedErrorFolder = u8"unexpected";
   const std::string kWrongMineFolder = u8"wrongmine";
@@ -134,7 +153,6 @@ class BotDialog : public QDialog
 
   // ModelTetragonalNeural solver;
   BruteForce solver;
-  unsigned int save_counter_;
   size_t step_index_;
   // Gaming thread synchronize
   bool finish_gaming_;
@@ -146,18 +164,19 @@ class BotDialog : public QDialog
   bool auto_restart_game_;
   bool save_steps_;
   QString save_folder_;
-  unsigned int finish_index_;
   QSettings settings_;
   std::mutex save_lock_;
   GameLevelID level_;
   bool save_unexpected_error_steps_;
   bool save_steps_before_wrong_mine_;
   bool save_probability_steps_;
+  bool save_fully_closed_steps_;
+  QString unique_mark_; // Unique mark, based on start time
 
   void PointingCancel();
   void ShowUnknownImages();
   void UpdateUnknownImages();
-  void CornersCompleted();
+  void UpdateCorners();
   void FormImage(const QImage& image, QPixmap& pixels);
   void ShowCornerImages();
   void StopGame();
@@ -166,7 +185,6 @@ class BotDialog : public QDialog
   void SaveWrongMine(unsigned int row, unsigned int col);
   void StartPointing(PointingTarget target);
   void Gaming(); // Thread for gaming procedure
-  void InformGameStopper(bool no_screen, bool no_field, bool unknown_images);
   void LoadSettings();
   void SaveSettings();
   void UnhookMouseByTimeout();

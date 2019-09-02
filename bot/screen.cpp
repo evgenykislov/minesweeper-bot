@@ -1,3 +1,24 @@
+/* Minesweeper Bot: Cross-platform bot for playing in minesweeper game.
+ * Copyright (C) 2019 Evgeny Kislov.
+ * https://www.evgenykislov.com/minesweeper-bot
+ * https://github.com/evgenykislov/minesweeper-bot
+ *
+ * This file is part of Minesweeper Bot.
+ *
+ * Minesweeper Bot is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Minesweeper Bot is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Minesweeper Bot.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <chrono>
 #include <thread>
 
@@ -130,7 +151,7 @@ bool BotScreen::GetImageByPosition(unsigned int row, unsigned int col, QImage& i
   auto field = pixmap.copy(field_rect);
   if (field.size() != field_rect.size()) { return false; }
   if (cell_height == 0 || cell_width == 0) { return false; }
-  image = field.copy(col * cell_width, row * cell_height, cell_width, cell_height).toImage();
+  image = field.copy(int(col) * cell_width, int(row) * cell_height, cell_width, cell_height).toImage();
   return true;
 }
 
@@ -186,8 +207,8 @@ void BotScreen::RefineRect() {
     cell_width_ = 0;
     return;
   }
-  cell_height_ = (unsigned int)(user_field_rect_.height() / (row_amount_ - 1) + 0.5);
-  cell_width_ = (unsigned int)(user_field_rect_.width() / (col_amount_ - 1) + 0.5);
+  cell_height_ = (unsigned int)(double(user_field_rect_.height()) / (row_amount_ - 1) + 0.5);
+  cell_width_ = (unsigned int)(double(user_field_rect_.width()) / (col_amount_ - 1) + 0.5);
   field_rect_.setTopLeft(user_field_rect_.topLeft() - QPoint(cell_width_ / 2, cell_height_ / 2));
   field_rect_.setHeight(cell_height_ * row_amount_);
   field_rect_.setWidth(cell_width_ * col_amount_);
@@ -301,7 +322,7 @@ void BotScreen::MakeCellClick(unsigned int row, unsigned int col, bool left_butt
     top = field_rect_.top() + row * cell_height_ + cell_height_ / 2;
     screen_id = screen_id_;
   }
-  QWidget* screen = QApplication::desktop()->screen(screen_id);
   QPoint point(left, top);
   MakeClick(point, left_button);
+  ignore = screen_id;
 }

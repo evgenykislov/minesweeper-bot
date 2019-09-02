@@ -4,10 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui testlib
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
+QT       += core gui testlib widgets
 TARGET = minesweeper_bot
 TEMPLATE = app
 
@@ -35,7 +32,9 @@ SOURCES += \
     field.cpp \
     settingsdialog.cpp \
     easylogging++.cc \
-    models/bruteforce.cpp
+    models/bruteforce.cpp \
+    aboutdialog.cpp \
+    licensesdialog.cpp
 
 HEADERS += \
     botdialog.h \
@@ -49,19 +48,32 @@ HEADERS += \
     settingsdialog.h \
     common.h \
     easylogging++.h \
-    models/bruteforce.h
+    models/bruteforce.h \
+    aboutdialog.h \
+    licensesdialog.h
 
 FORMS += \
     botdialog.ui \
     celltypedialog.ui \
-    settingsdialog.ui
+    settingsdialog.ui \
+    aboutdialog.ui \
+    licensesdialog.ui
 
 RESOURCES += \
     bot.qrc
 
-unix:!macx: LIBS += -L/usr/local/lib/ -luiohook -lfakeInput
+unix:!macx: LIBS += -L/usr/local/lib/
+win32: LIBS += -L$$PWD/../win32/lib/
 
-INCLUDEPATH += /usr/local/include
+LIBS += -luiohook -lfakeInput
+
+unix:!macx: INCLUDEPATH += /usr/local/include
+win32: INCLUDEPATH += $$PWD/../win32/include
+
 INCLUDEPATH += $$PWD
 
-DEPENDPATH += /usr/local/include
+unix:!macx: DEPENDPATH += /usr/local/include
+win32: DEPENDPATH += $$PWD/../win32/include
+
+win32: PRE_TARGETDEPS += $$PWD/../win32/lib/libuiohook.a
+win32: PRE_TARGETDEPS += $$PWD/../win32/lib/libfakeInput.a

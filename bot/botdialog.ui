@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>777</width>
-    <height>201</height>
+    <width>809</width>
+    <height>212</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -471,22 +471,6 @@
      <string>Click left-top and right-bottom corners</string>
     </property>
    </widget>
-   <widget class="QProgressBar" name="CornersBar">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>90</y>
-      <width>121</width>
-      <height>8</height>
-     </rect>
-    </property>
-    <property name="value">
-     <number>0</number>
-    </property>
-    <property name="textVisible">
-     <bool>false</bool>
-    </property>
-   </widget>
    <widget class="QPushButton" name="to_bottom_btn_">
     <property name="geometry">
      <rect>
@@ -555,14 +539,64 @@
       <normaloff>:/res/res/move_right.png</normaloff>:/res/res/move_right.png</iconset>
     </property>
    </widget>
+   <widget class="QLabel" name="progress_lbl_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>91</y>
+      <width>62</width>
+      <height>6</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(114, 159, 207);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="progress_back_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>90</y>
+      <width>121</width>
+      <height>8</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 255);</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <zorder>cell_bottom_left_</zorder>
+   <zorder>cell_bottom_right_</zorder>
+   <zorder>cell_top_right_</zorder>
+   <zorder>cell_top_left_</zorder>
+   <zorder>cell_restart_</zorder>
+   <zorder>SetCornersBtn</zorder>
+   <zorder>bottom_right_corner_btn_</zorder>
+   <zorder>restart_btn_</zorder>
+   <zorder>CornersLbl</zorder>
+   <zorder>to_bottom_btn_</zorder>
+   <zorder>to_top_btn_</zorder>
+   <zorder>to_left_btn_</zorder>
+   <zorder>to_right_btn_</zorder>
+   <zorder>progress_back_</zorder>
+   <zorder>progress_lbl_</zorder>
   </widget>
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
      <x>690</x>
      <y>10</y>
-     <width>81</width>
-     <height>181</height>
+     <width>111</width>
+     <height>71</height>
     </rect>
    </property>
    <property name="title">
@@ -594,8 +628,8 @@
    <widget class="QPushButton" name="stop_btn_">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>70</y>
+      <x>60</x>
+      <y>30</y>
       <width>36</width>
       <height>36</height>
      </rect>
@@ -614,29 +648,64 @@
      </size>
     </property>
    </widget>
-   <widget class="QPushButton" name="settings_btn_">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>120</y>
-      <width>36</width>
-      <height>36</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="icon">
-     <iconset resource="bot.qrc">
-      <normaloff>:/res/res/gear.png</normaloff>:/res/res/gear.png</iconset>
-    </property>
-    <property name="iconSize">
-     <size>
-      <width>32</width>
-      <height>32</height>
-     </size>
-    </property>
-   </widget>
+  </widget>
+  <widget class="QLabel" name="link_to_site_">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>190</y>
+     <width>281</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;a href=&quot;https://www.evgenykislov.com/minesweeper-bot&quot;&gt;www.evgenykislov.com&lt;/a&gt;</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+   <property name="openExternalLinks">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="about_btn_">
+   <property name="geometry">
+    <rect>
+     <x>760</x>
+     <y>140</y>
+     <width>36</width>
+     <height>36</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 75 20pt &quot;Free Courier&quot;;</string>
+   </property>
+   <property name="text">
+    <string>i</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="settings_btn_">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>140</y>
+     <width>36</width>
+     <height>36</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="icon">
+    <iconset resource="bot.qrc">
+     <normaloff>:/res/res/gear.png</normaloff>:/res/res/gear.png</iconset>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
+   </property>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
@@ -671,7 +740,7 @@
    <sender>SetCornersBtn</sender>
    <signal>clicked()</signal>
    <receiver>BotDialog</receiver>
-   <slot>OnCornersBtn()</slot>
+   <slot>OnTopLeftCorner()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>337</x>
@@ -827,9 +896,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>about_btn_</sender>
+   <signal>clicked()</signal>
+   <receiver>BotDialog</receiver>
+   <slot>OnAbout()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>777</x>
+     <y>157</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>404</x>
+     <y>105</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>OnCornersBtn()</slot>
+  <slot>OnTopLeftCorner()</slot>
   <slot>OnRun()</slot>
   <slot>OnImageClick()</slot>
   <slot>OnTopField()</slot>
@@ -841,6 +926,7 @@
   <slot>OnSettings()</slot>
   <slot>OnStop()</slot>
   <slot>OnLevelChanged(int)</slot>
+  <slot>OnAbout()</slot>
  </slots>
  <buttongroups>
   <buttongroup name="level_btngrp_"/>
