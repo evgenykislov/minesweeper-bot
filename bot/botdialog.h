@@ -182,6 +182,7 @@ class BotDialog : public QDialog
   void StopGame();
   void RestartGame();
   void SaveStep(StepTypeForSave step_type, const StepInfo& info);
+  void SaveRowColAsJson(std::ofstream& stream, unsigned int row, unsigned int col);
   void SaveWrongMine(unsigned int row, unsigned int col);
   void StartPointing(PointingTarget target);
   void Gaming(); // Thread for gaming procedure

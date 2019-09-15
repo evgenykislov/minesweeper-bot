@@ -280,7 +280,6 @@ void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
         break;
     }
   }
-
   QDir file_folder(folder);
   file_folder.mkpath("."); // TODO check return
   QString folder_name = file_folder.absolutePath() + QDir::separator();
@@ -290,33 +289,62 @@ void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
     // TODO can't save
     return;
   }
-  step_file << "step-row: " << info.row_ << endl;
-  step_file << "step-col: " << info.col_ << endl;
-  string forecast;
-  switch (info.step_) {
-    case Classifier::StepAction::kOpenWithSure:
-      forecast = "clear";
-      break;
-    case Classifier::StepAction::kOpenWithProbability:
-      forecast = "unknown";
-      break;
-    case Classifier::StepAction::kMarkAsMine:
-      forecast = "mine";
-      break;
+  auto height = info.field_.size();
+  size_t width = 0;
+  if (height > 0) {
+    width = info.field_[0].size();
   }
-  step_file << "forecast: " << forecast << endl;
-  step_file << "field:" << endl;
+  step_file << "{" << endl;
+  step_file << "  field: {" << endl;
+  step_file << "    height: " << height << "," << endl;
+  step_file << "    width: " << width << "," << endl;
+  step_file << "    cells: [" << endl;
+  bool first_cell = true;
   for (auto row_iter = info.field_.begin(); row_iter != info.field_.end(); ++row_iter) {
+    step_file << "      ";
     for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
-      step_file << *col_iter;
+      if (first_cell) {
+        first_cell = false;
+        step_file << "  ";
+      }
+      else {
+        step_file << ", ";
+      }
+      step_file << "'" << *col_iter << "'";
     }
     step_file << endl;
   }
+  step_file << "    ]"<< endl;
+  step_file << "  }, " << endl;
+  // Clear cells
+  step_file << "  clear_cells: [";
+  if (info.step_ == Classifier::StepAction::kOpenWithSure) {
+    SaveRowColAsJson(step_file, info.row_, info.col_);
+  }
+  step_file << "]," << endl;
+  // Mine cells
+  step_file << "  mine_cells: [";
+  if (info.step_ == Classifier::StepAction::kMarkAsMine) {
+    SaveRowColAsJson(step_file, info.row_, info.col_);
+  }
+  step_file << "]," << endl;
+  // Unknown cells
+  step_file << "  unknown_cells: [";
+  if (info.step_ == Classifier::StepAction::kOpenWithProbability) {
+    SaveRowColAsJson(step_file, info.row_, info.col_);
+  }
+  step_file << "]" << endl;
+  // close json
+  step_file << "}" << endl;
   if (!step_file) {
     // TODO saving error
     return;
   }
   step_file.close();
+}
+
+void BotDialog::SaveRowColAsJson(std::ofstream& stream, unsigned int row, unsigned int col) {
+  stream << "{ row: " << row << ", col: " << col << " }";
 }
 
 void BotDialog::SaveWrongMine(unsigned int row, unsigned int col) {
