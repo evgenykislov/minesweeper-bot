@@ -388,77 +388,56 @@ void BotDialog::StartPointing(PointingTarget target) {
 
 void BotDialog::Gaming() {
   // Thread for gaming procedure
-  LOG(INFO) << "Game thread has started";
-  unsigned int mines_amount;
-  std::list<StepInfo> wrong_tail; // Tail of steps before wrong mine
-  while (true) {
-    // Wait for user action (run, restart, etc)
-    LOG(INFO) << "Wait game resume";
-    {
-      unique_lock<mutex> locker(gaming_lock_);
-      gaming_stopper_.wait(locker, [this](){
-        return finish_gaming_ || resume_gaming_;
-      });
-      if (finish_gaming_) {
-        LOG(INFO) << "Game thread finishing";
-        break;
-      }
-      resume_gaming_ = false;
-    }
-    {
-      lock_guard<mutex> locker(mines_amount_lock_);
-      mines_amount = mines_amount_;
-    }
+  while (WaitActionAndProceed()) {
+    // Check field exist, grabbable
     bool error_in_field;
     scr_.StoreFieldBeforeChange(error_in_field);
     if (error_in_field) {
       emit DoGameStopped(false, true, false);
     }
-    while (true) {
-      {
-        lock_guard<mutex> locker(gaming_lock_);
-        if (finish_gaming_) {
-          LOG(INFO) << "Finishing game" << endl;
-          break;
-        }
-        if (stop_gaming_) {
-          stop_gaming_ = false;
-          LOG(INFO) << "Stopping game";
-          DoGameStoppedByUser();
-          break;
-        }
-      }
+    std::list<StepInfo> wrong_tail; // Tail of steps before wrong mine
+    Field field;
+    bool game_over;
+    bool error_no_field;
+    bool error_unknown_images;
+    bool error_timeout;
+    // Get game parameters
+    unsigned int mines_amount;
+    {
+      lock_guard<mutex> locker(mines_amount_lock_);
+      mines_amount = mines_amount_;
+    }
+    bool save_train_steps;
+    bool save_unexpected_steps;
+    bool save_wrong_mine_steps;
+    bool save_probability_steps;
+    bool save_fully_closed_steps;
+    {
+      lock_guard<mutex> locker(save_lock_);
+      save_train_steps = save_steps_;
+      save_unexpected_steps = save_unexpected_error_steps_;
+      save_wrong_mine_steps = save_steps_before_wrong_mine_;
+      save_probability_steps = save_probability_steps_;
+      save_fully_closed_steps = save_fully_closed_steps_;
+    }
+    // Gaming cycle
+    while (CheckProceed()) {
       // Check mouse aren't moved
       if (!IsMouseIdle()) {
         LOG(INFO) << "Wait for mouse idle";
         this_thread::sleep_for(kMouseIdleRecheckInterval);
         continue;
       }
-      // Get save settings
+      // Get step index
       StepInfo step_info;
-      bool save_train_steps;
-      bool save_unexpected_steps;
-      bool save_wrong_mine_steps;
-      bool save_probability_steps;
-      bool save_fully_closed_steps;
       {
         lock_guard<mutex> locker(save_lock_);
-        save_train_steps = save_steps_;
-        save_unexpected_steps = save_unexpected_error_steps_;
-        save_wrong_mine_steps = save_steps_before_wrong_mine_;
-        save_probability_steps = save_probability_steps_;
-        save_fully_closed_steps = save_fully_closed_steps_;
         step_info.step_index_ = step_index_;
         ++step_index_;
       }
 
       // Get field
       LOG(INFO) << "Get field";
-      Field field;
-      bool game_over;
-      bool error_no_field;
-      bool error_unknown_images;
-      bool error_timeout;
       scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
       if (error_no_field || error_unknown_images) {
         LOG(INFO) << "Game stopped by reason";
@@ -507,8 +486,6 @@ void BotDialog::Gaming() {
       Classifier::StepAction step;
       solver.GetStep(field, mines_amount, row, col, step);
       LOG(INFO) << "Got new step";
-      // Detect wait, mouse move, etc
-
       // Make step
       // Check mouse aren't moved
       if (!IsMouseIdle()) {
@@ -581,7 +558,6 @@ void BotDialog::Gaming() {
       }
     }
   }
-  LOG(INFO) << "Game thread has finished";
 }
 
 void BotDialog::LoadSettings() {
@@ -701,6 +677,28 @@ bool BotDialog::FieldHasWrongMine(const Field& field, unsigned int& row, unsigne
     }
   }
   return false;
+}
+
+bool BotDialog::WaitActionAndProceed() {
+  unique_lock<mutex> locker(gaming_lock_);
+  gaming_stopper_.wait(locker, [this](){
+    return finish_gaming_ || resume_gaming_;
+  });
+  resume_gaming_ = false;
+  return !finish_gaming_;
+}
+
+bool BotDialog::CheckProceed() {
+  lock_guard<mutex> locker(gaming_lock_);
+  if (finish_gaming_) {
+    return false;
+  }
+  if (stop_gaming_) {
+    stop_gaming_ = false;
+    DoGameStoppedByUser();
+    return false;
+  }
+  return true;
 }
 
 void BotDialog::OnRun() {
@@ -921,3 +919,4 @@ void BotDialog::OnStartUpdate() {
 void BotDialog::OnGameStoppedByUser() {
   // TODO
 }
+

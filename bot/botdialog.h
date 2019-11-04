@@ -194,6 +194,8 @@ class BotDialog : public QDialog
   void UpdateGamingByLevel(); // Update gaming parameters (rows, columns, mines) by level information
   void SetLevelButtonsStates();
   bool FieldHasWrongMine(const Field& field, unsigned int& row, unsigned int& col);
+  bool WaitActionAndProceed(); //!< Waiting for user action or exit. Return the flag to proceeding
+  bool CheckProceed(); //!< Check if gaming cycle can be proceeded
 
  private slots:
   void PointingTick();
