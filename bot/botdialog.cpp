@@ -420,6 +420,8 @@ void BotDialog::Gaming() {
       save_probability_steps = save_probability_steps_;
       save_fully_closed_steps = save_fully_closed_steps_;
     }
+    vector<StepWTimeout> step_cache;
+    bool after_step_waited = false;
     // Gaming cycle
     while (CheckProceed()) {
       // Check mouse aren't moved
@@ -439,6 +441,7 @@ void BotDialog::Gaming() {
       // Get field
       LOG(INFO) << "Get field";
       scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
+      UseCacheOnField(field, step_cache);
       if (error_no_field || error_unknown_images) {
         LOG(INFO) << "Game stopped by reason";
         emit DoGameStopped(false, error_no_field, error_unknown_images); // TODO remove first argument
@@ -498,6 +501,13 @@ void BotDialog::Gaming() {
         emit DoGameStopped(false, error_no_field, false);
         break;
       }
+      if (step == Classifier::kOpenWithProbability && !after_step_waited) {
+        // Wait for screen update
+        this_thread::sleep_for(duration<float>(kAfterStepSleep));
+        after_step_waited = true;
+        continue;
+      }
+      after_step_waited = false;
       switch (step) {
         case Classifier::kOpenWithSure:
         case Classifier::kOpenWithProbability:
@@ -507,11 +517,17 @@ void BotDialog::Gaming() {
           scr_.MakeMark(row, col);
           break;
       }
-      this_thread::sleep_for(duration<float>(kAfterStepSleep));
+      StepWTimeout tostep;
+      tostep.row_ = row;
+      tostep.col_ = col;
+      tostep.step_ = step;
+      tostep.timeout_ = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now()) + kStepTimeout;
+      step_cache.push_back(tostep);
       LOG(INFO) << "Made step";
       // Wait for update complete
       Field next_field;
       scr_.GetStableField(next_field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
+      UseCacheOnField(next_field, step_cache);
       // Detect success
       if (error_no_field || error_unknown_images) {
         emit DoGameStopped(false, error_no_field, error_unknown_images);
@@ -700,6 +716,31 @@ bool BotDialog::CheckProceed() {
   }
   return true;
 }
+
+void BotDialog::UseCacheOnField(Field& field, std::vector<StepWTimeout>& cache) {
+  auto current_time = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
+  remove_if(cache.begin(), cache.end(), [current_time](const StepWTimeout& value){
+    return value.timeout_ < current_time;
+  });
+  for (auto iter = cache.begin(); iter != cache.end();) {
+    auto& cell = field[iter->row_][iter->col_];
+    if (cell == kClosedCellSymbol) {
+      // Use information from cache
+      if (iter->step_ == Classifier::StepAction::kMarkAsMine) {
+        cell = kMineMarkSymbol;
+      }
+      else {
+        cell = kOutFieldCellSymbol;
+      }
+      ++iter;
+    }
+    else {
+      // cache information is too old. remove from cache
+      iter = cache.erase(iter);
+    }
+  }
+}
+
 
 void BotDialog::OnRun() {
   SaveSettings();
