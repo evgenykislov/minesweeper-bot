@@ -107,6 +107,7 @@ class BotDialog : public QDialog
   };
 
   const float kReceiveFieldTimeout = 0.5;
+  const float kAfterStepSleep = 0.08;
   const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;

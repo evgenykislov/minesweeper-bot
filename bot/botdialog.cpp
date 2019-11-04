@@ -409,6 +409,11 @@ void BotDialog::Gaming() {
       lock_guard<mutex> locker(mines_amount_lock_);
       mines_amount = mines_amount_;
     }
+    bool error_in_field;
+    scr_.StoreFieldBeforeChange(error_in_field);
+    if (error_in_field) {
+      emit DoGameStopped(false, true, false);
+    }
     while (true) {
       {
         lock_guard<mutex> locker(gaming_lock_);
@@ -451,14 +456,13 @@ void BotDialog::Gaming() {
       LOG(INFO) << "Get field";
       Field field;
       bool game_over;
-      bool error_no_screen;
       bool error_no_field;
       bool error_unknown_images;
       bool error_timeout;
-      scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
-      if (error_no_screen || error_no_field || error_unknown_images) {
+      scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
+      if (error_no_field || error_unknown_images) {
         LOG(INFO) << "Game stopped by reason";
-        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+        emit DoGameStopped(false, error_no_field, error_unknown_images); // TODO remove first argument
         break;
       }
       if (game_over) {
@@ -512,6 +516,11 @@ void BotDialog::Gaming() {
         continue;
       }
       UnhookMouseByTimeout();
+      scr_.StoreFieldBeforeChange(error_no_field);
+      if (error_no_field) {
+        emit DoGameStopped(false, error_no_field, false);
+        break;
+      }
       switch (step) {
         case Classifier::kOpenWithSure:
         case Classifier::kOpenWithProbability:
@@ -521,14 +530,17 @@ void BotDialog::Gaming() {
           scr_.MakeMark(row, col);
           break;
       }
+      this_thread::sleep_for(duration<float>(kAfterStepSleep));
+      LOG(INFO) << "Made step";
       // Wait for update complete
       Field next_field;
-      scr_.GetChangedField(next_field, field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
+      scr_.GetStableField(next_field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
       // Detect success
-      if (error_no_screen || error_no_field || error_unknown_images) {
-        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+      if (error_no_field || error_unknown_images) {
+        emit DoGameStopped(false, error_no_field, error_unknown_images);
         break;
       }
+      LOG(INFO) << "Got changed screen x0d";
       step_info.field_ = field;
       step_info.row_ = row;
       step_info.col_ = col;
