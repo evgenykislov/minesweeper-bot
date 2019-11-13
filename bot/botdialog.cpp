@@ -280,7 +280,6 @@ void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
         break;
     }
   }
-
   QDir file_folder(folder);
   file_folder.mkpath("."); // TODO check return
   QString folder_name = file_folder.absolutePath() + QDir::separator();
@@ -290,33 +289,62 @@ void BotDialog::SaveStep(StepTypeForSave step_type, const StepInfo& info) {
     // TODO can't save
     return;
   }
-  step_file << "step-row: " << info.row_ << endl;
-  step_file << "step-col: " << info.col_ << endl;
-  string forecast;
-  switch (info.step_) {
-    case Classifier::StepAction::kOpenWithSure:
-      forecast = "clear";
-      break;
-    case Classifier::StepAction::kOpenWithProbability:
-      forecast = "unknown";
-      break;
-    case Classifier::StepAction::kMarkAsMine:
-      forecast = "mine";
-      break;
+  auto height = info.field_.size();
+  size_t width = 0;
+  if (height > 0) {
+    width = info.field_[0].size();
   }
-  step_file << "forecast: " << forecast << endl;
-  step_file << "field:" << endl;
+  step_file << "{" << endl;
+  step_file << "  field: {" << endl;
+  step_file << "    height: " << height << "," << endl;
+  step_file << "    width: " << width << "," << endl;
+  step_file << "    cells: [" << endl;
+  bool first_cell = true;
   for (auto row_iter = info.field_.begin(); row_iter != info.field_.end(); ++row_iter) {
+    step_file << "      ";
     for (auto col_iter = row_iter->begin(); col_iter != row_iter->end(); ++col_iter) {
-      step_file << *col_iter;
+      if (first_cell) {
+        first_cell = false;
+        step_file << "  ";
+      }
+      else {
+        step_file << ", ";
+      }
+      step_file << "'" << *col_iter << "'";
     }
     step_file << endl;
   }
+  step_file << "    ]"<< endl;
+  step_file << "  }, " << endl;
+  // Clear cells
+  step_file << "  clear_cells: [";
+  if (info.step_ == Classifier::StepAction::kOpenWithSure) {
+    SaveRowColAsJson(step_file, info.row_, info.col_);
+  }
+  step_file << "]," << endl;
+  // Mine cells
+  step_file << "  mine_cells: [";
+  if (info.step_ == Classifier::StepAction::kMarkAsMine) {
+    SaveRowColAsJson(step_file, info.row_, info.col_);
+  }
+  step_file << "]," << endl;
+  // Unknown cells
+  step_file << "  unknown_cells: [";
+  if (info.step_ == Classifier::StepAction::kOpenWithProbability) {
+    SaveRowColAsJson(step_file, info.row_, info.col_);
+  }
+  step_file << "]" << endl;
+  // close json
+  step_file << "}" << endl;
   if (!step_file) {
     // TODO saving error
     return;
   }
   step_file.close();
+}
+
+void BotDialog::SaveRowColAsJson(std::ofstream& stream, unsigned int row, unsigned int col) {
+  stream << "{ row: " << row << ", col: " << col << " }";
 }
 
 void BotDialog::SaveWrongMine(unsigned int row, unsigned int col) {
@@ -360,77 +388,63 @@ void BotDialog::StartPointing(PointingTarget target) {
 
 void BotDialog::Gaming() {
   // Thread for gaming procedure
-  LOG(INFO) << "Game thread has started";
-  unsigned int mines_amount;
-  std::list<StepInfo> wrong_tail; // Tail of steps before wrong mine
-  while (true) {
-    // Wait for user action (run, restart, etc)
-    LOG(INFO) << "Wait game resume";
-    {
-      unique_lock<mutex> locker(gaming_lock_);
-      gaming_stopper_.wait(locker, [this](){
-        return finish_gaming_ || resume_gaming_;
-      });
-      if (finish_gaming_) {
-        LOG(INFO) << "Game thread finishing";
-        break;
-      }
-      resume_gaming_ = false;
+  while (WaitActionAndProceed()) {
+    // Check field exist, grabbable
+    bool error_in_field;
+    scr_.StoreFieldBeforeChange(error_in_field);
+    if (error_in_field) {
+      emit DoGameStopped(false, true, false);
     }
+    std::list<StepInfo> wrong_tail; // Tail of steps before wrong mine
+    Field field;
+    bool game_over;
+    bool error_no_field;
+    bool error_unknown_images;
+    bool error_timeout;
+    // Get game parameters
+    unsigned int mines_amount;
     {
       lock_guard<mutex> locker(mines_amount_lock_);
       mines_amount = mines_amount_;
     }
-    while (true) {
-      {
-        lock_guard<mutex> locker(gaming_lock_);
-        if (finish_gaming_) {
-          LOG(INFO) << "Finishing game" << endl;
-          break;
-        }
-        if (stop_gaming_) {
-          stop_gaming_ = false;
-          LOG(INFO) << "Stopping game";
-          DoGameStoppedByUser();
-          break;
-        }
-      }
+    bool save_train_steps;
+    bool save_unexpected_steps;
+    bool save_wrong_mine_steps;
+    bool save_probability_steps;
+    bool save_fully_closed_steps;
+    {
+      lock_guard<mutex> locker(save_lock_);
+      save_train_steps = save_steps_;
+      save_unexpected_steps = save_unexpected_error_steps_;
+      save_wrong_mine_steps = save_steps_before_wrong_mine_;
+      save_probability_steps = save_probability_steps_;
+      save_fully_closed_steps = save_fully_closed_steps_;
+    }
+    vector<StepWTimeout> step_cache;
+    bool after_step_waited = false;
+    // Gaming cycle
+    while (CheckProceed()) {
       // Check mouse aren't moved
       if (!IsMouseIdle()) {
         LOG(INFO) << "Wait for mouse idle";
         this_thread::sleep_for(kMouseIdleRecheckInterval);
         continue;
       }
-      // Get save settings
+      // Get step index
       StepInfo step_info;
-      bool save_train_steps;
-      bool save_unexpected_steps;
-      bool save_wrong_mine_steps;
-      bool save_probability_steps;
-      bool save_fully_closed_steps;
       {
         lock_guard<mutex> locker(save_lock_);
-        save_train_steps = save_steps_;
-        save_unexpected_steps = save_unexpected_error_steps_;
-        save_wrong_mine_steps = save_steps_before_wrong_mine_;
-        save_probability_steps = save_probability_steps_;
-        save_fully_closed_steps = save_fully_closed_steps_;
         step_info.step_index_ = step_index_;
         ++step_index_;
       }
 
       // Get field
       LOG(INFO) << "Get field";
-      Field field;
-      bool game_over;
-      bool error_no_screen;
-      bool error_no_field;
-      bool error_unknown_images;
-      bool error_timeout;
-      scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
-      if (error_no_screen || error_no_field || error_unknown_images) {
+      scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
+      UseCacheOnField(field, step_cache);
+      if (error_no_field || error_unknown_images) {
         LOG(INFO) << "Game stopped by reason";
-        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+        emit DoGameStopped(false, error_no_field, error_unknown_images); // TODO remove first argument
         break;
       }
       if (game_over) {
@@ -475,8 +489,6 @@ void BotDialog::Gaming() {
       Classifier::StepAction step;
       solver.GetStep(field, mines_amount, row, col, step);
       LOG(INFO) << "Got new step";
-      // Detect wait, mouse move, etc
-
       // Make step
       // Check mouse aren't moved
       if (!IsMouseIdle()) {
@@ -484,6 +496,18 @@ void BotDialog::Gaming() {
         continue;
       }
       UnhookMouseByTimeout();
+      scr_.StoreFieldBeforeChange(error_no_field);
+      if (error_no_field) {
+        emit DoGameStopped(false, error_no_field, false);
+        break;
+      }
+      if (step == Classifier::kOpenWithProbability && !after_step_waited) {
+        // Wait for screen update
+        this_thread::sleep_for(duration<float>(kAfterStepSleep));
+        after_step_waited = true;
+        continue;
+      }
+      after_step_waited = false;
       switch (step) {
         case Classifier::kOpenWithSure:
         case Classifier::kOpenWithProbability:
@@ -493,14 +517,23 @@ void BotDialog::Gaming() {
           scr_.MakeMark(row, col);
           break;
       }
+      StepWTimeout tostep;
+      tostep.row_ = row;
+      tostep.col_ = col;
+      tostep.step_ = step;
+      tostep.timeout_ = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now()) + kStepTimeout;
+      step_cache.push_back(tostep);
+      LOG(INFO) << "Made step";
       // Wait for update complete
       Field next_field;
-      scr_.GetChangedField(next_field, field, kReceiveFieldTimeout, game_over, error_no_screen, error_no_field, error_unknown_images, error_timeout);
+      scr_.GetStableField(next_field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
+      UseCacheOnField(next_field, step_cache);
       // Detect success
-      if (error_no_screen || error_no_field || error_unknown_images) {
-        emit DoGameStopped(error_no_screen, error_no_field, error_unknown_images);
+      if (error_no_field || error_unknown_images) {
+        emit DoGameStopped(false, error_no_field, error_unknown_images);
         break;
       }
+      LOG(INFO) << "Got changed screen x0d";
       step_info.field_ = field;
       step_info.row_ = row;
       step_info.col_ = col;
@@ -541,7 +574,6 @@ void BotDialog::Gaming() {
       }
     }
   }
-  LOG(INFO) << "Game thread has finished";
 }
 
 void BotDialog::LoadSettings() {
@@ -662,6 +694,53 @@ bool BotDialog::FieldHasWrongMine(const Field& field, unsigned int& row, unsigne
   }
   return false;
 }
+
+bool BotDialog::WaitActionAndProceed() {
+  unique_lock<mutex> locker(gaming_lock_);
+  gaming_stopper_.wait(locker, [this](){
+    return finish_gaming_ || resume_gaming_;
+  });
+  resume_gaming_ = false;
+  return !finish_gaming_;
+}
+
+bool BotDialog::CheckProceed() {
+  lock_guard<mutex> locker(gaming_lock_);
+  if (finish_gaming_) {
+    return false;
+  }
+  if (stop_gaming_) {
+    stop_gaming_ = false;
+    DoGameStoppedByUser();
+    return false;
+  }
+  return true;
+}
+
+void BotDialog::UseCacheOnField(Field& field, std::vector<StepWTimeout>& cache) {
+  auto current_time = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
+  remove_if(cache.begin(), cache.end(), [current_time](const StepWTimeout& value){
+    return value.timeout_ < current_time;
+  });
+  for (auto iter = cache.begin(); iter != cache.end();) {
+    auto& cell = field[iter->row_][iter->col_];
+    if (cell == kClosedCellSymbol) {
+      // Use information from cache
+      if (iter->step_ == Classifier::StepAction::kMarkAsMine) {
+        cell = kMineMarkSymbol;
+      }
+      else {
+        cell = kOutFieldCellSymbol;
+      }
+      ++iter;
+    }
+    else {
+      // cache information is too old. remove from cache
+      iter = cache.erase(iter);
+    }
+  }
+}
+
 
 void BotDialog::OnRun() {
   SaveSettings();
@@ -881,3 +960,4 @@ void BotDialog::OnStartUpdate() {
 void BotDialog::OnGameStoppedByUser() {
   // TODO
 }
+

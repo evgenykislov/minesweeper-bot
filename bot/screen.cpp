@@ -78,60 +78,51 @@ void BotScreen::SetScreenID(int id) {
   screen_id_ = id;
 }
 
+void BotScreen::StoreFieldBeforeChange(bool& error_field_undetected) {
+  QPixmap new_pix;
+  error_field_undetected = false;
+  if (!GetSnapshot(new_pix)) {
+    error_field_undetected = true;
+    return;
+  }
+  lock_guard<mutex> locker(last_snapshot_lock_);
+  last_snapshot_ = new_pix;
+}
+
 void BotScreen::GetStableField(Field& field
     , float timeout_sec
     , bool& game_over
-    , bool& error_screen_absent
     , bool& error_field_undetected
     , bool& error_unknown_images
     , bool& error_timeout) {
   auto start = steady_clock::now();
   auto finish = start + duration<float>(timeout_sec);
   error_timeout = false;
-  Field last_field;
-  while (finish >= steady_clock::now()) {
-    GetField(field, game_over, error_screen_absent, error_field_undetected, error_unknown_images);
-    if (error_screen_absent || error_field_undetected || error_unknown_images) {
-      return;
-    }
-    if (field == last_field) {
-      return;
-    }
-    swap(last_field, field);
-    this_thread::sleep_for(duration<float>(kSnapshotInterval));
+  QImage last_image;
+  {
+    lock_guard<mutex> locker(last_snapshot_lock_);
+    last_image = last_snapshot_.toImage();
   }
-  error_timeout = true;
-}
-
-void BotScreen::GetChangedField(Field& field
-    , const Field& base_field
-    , float timeout_sec
-    , bool& game_over
-    , bool& error_screen_absent
-    , bool& error_field_undetected
-    , bool& error_unknown_images
-    , bool& error_timeout) {
-  auto start = steady_clock::now();
-  auto finish = start + duration<float>(timeout_sec);
-  error_timeout = false;
+  QPixmap new_pix;
   while (finish >= steady_clock::now()) {
-    GetField(field, game_over, error_screen_absent, error_field_undetected, error_unknown_images);
-    if (error_screen_absent || error_field_undetected || error_unknown_images) {
+    if (!GetSnapshot(new_pix)) {
+      error_field_undetected = true;
       return;
     }
-    if (field != base_field) {
-      break;
+    QImage new_image = new_pix.toImage();
+    if (new_image != last_image) {
+      last_image = new_image;
+      this_thread::sleep_for(duration<float>(kSnapshotInterval));
+      continue;
     }
-    this_thread::sleep_for(duration<float>(kSnapshotInterval));
-  }
-  auto next_start = steady_clock::now();
-  if (finish < next_start) {
-    error_timeout = true;
+    {
+      lock_guard<mutex> locker(last_snapshot_lock_);
+      last_snapshot_ = new_pix;
+    }
+    GetField(new_pix, field, game_over, error_field_undetected, error_unknown_images);
     return;
   }
-  duration<float> next_timeout = finish - next_start;
-  GetStableField(field, next_timeout.count(), game_over
-    , error_screen_absent, error_field_undetected, error_unknown_images, error_timeout);
+  error_timeout = true;
 }
 
 bool BotScreen::GetImageByPosition(unsigned int row, unsigned int col, QImage& image) {
@@ -242,9 +233,9 @@ void BotScreen::MakeClick(const QPoint& point, bool left_button) {
   FakeInput::Mouse::releaseButton(button);
 }
 
-void BotScreen::GetField(Field& field_1
+void BotScreen::GetField(const QPixmap& shot
+  , Field& field_1
   , bool& game_over
-  , bool& error_screen_absent
   , bool& error_field_undetected
   , bool& error_unknown_images) {
 
@@ -260,20 +251,7 @@ void BotScreen::GetField(Field& field_1
     unknown_images_.clear();
   }
   game_over = false;
-  error_screen_absent = false;
   error_field_undetected = false;
-
-  QScreen *screen = QGuiApplication::primaryScreen();
-  if (!screen) {
-    error_screen_absent = true;
-    return;
-  }
-  auto pixmap = screen->grabWindow(0);
-  auto pix_field = pixmap.copy(field_rect);
-  if (pix_field.size() != field_rect.size()) {
-    error_field_undetected = true;
-    return;
-  }
   if (cell_height == 0 || cell_width == 0) {
     error_field_undetected = true;
     return;
@@ -281,7 +259,7 @@ void BotScreen::GetField(Field& field_1
   FormatField(field_1);
   for (unsigned int row_index = 0; row_index != row_amount_; ++row_index) {
     for (unsigned int col_index = 0; col_index != col_amount_; ++col_index) {
-      auto cell = pix_field.copy(col_index * cell_width, row_index * cell_height, cell_width, cell_height).toImage();
+      auto cell = shot.copy(col_index * cell_width, row_index * cell_height, cell_width, cell_height).toImage();
       // Find cell type
       char cell_type;
       if (storage_.GetStateByImage(cell, cell_type)) {
@@ -303,7 +281,7 @@ void BotScreen::GetField(Field& field_1
     }
   }
   error_unknown_images = !unknown_images.empty();
-  if (error_screen_absent || error_field_undetected || error_unknown_images) {
+  if (error_field_undetected || error_unknown_images) {
     field_1.clear();
   }
   {
@@ -325,4 +303,22 @@ void BotScreen::MakeCellClick(unsigned int row, unsigned int col, bool left_butt
   QPoint point(left, top);
   MakeClick(point, left_button);
   ignore = screen_id;
+}
+
+bool BotScreen::GetSnapshot(QPixmap& shot) {
+  QRect field_rect;
+  {
+    lock_guard<mutex> locker(parameters_lock_);
+    field_rect = field_rect_;
+  }
+  QScreen *screen = QGuiApplication::primaryScreen();
+  if (!screen) {
+    return false;
+  }
+  auto pixmap = screen->grabWindow(0);
+  shot = pixmap.copy(field_rect);
+  if (shot.size() != field_rect.size()) {
+    return false;
+  }
+  return true;
 }

@@ -41,20 +41,12 @@ public:
   void SetFieldSize(unsigned int row_amount, unsigned int col_amount);
   void SetScreenID(int id);
 
-  /*! \brief Get stable field. With thread blocking */
+  void StoreFieldBeforeChange(bool& error_field_undetected);
+
+  /*! \brief Wait for stable field. With thread blocking */
   void GetStableField(Field& field
     , float timeout_sec
     , bool& game_over
-    , bool& error_screen_absent
-    , bool& error_field_undetected
-    , bool& error_unknown_images
-    , bool& error_timeout);
-  /*! \brief Get next-stable field. With thread blocking */
-  void GetChangedField(Field& field
-    , const Field& base_field
-    , float timeout_sec
-    , bool& game_over
-    , bool& error_screen_absent
     , bool& error_field_undetected
     , bool& error_unknown_images
     , bool& error_timeout);
@@ -86,6 +78,8 @@ public:
   std::list<QImage> unknown_images_;
   QPoint restart_point_;
   std::mutex parameters_lock_;
+  QPixmap last_snapshot_;
+  std::mutex last_snapshot_lock_;
 
   unsigned int cell_width_;
   unsigned int cell_height_;
@@ -96,12 +90,13 @@ public:
   void RefineRect();
   void FormatField(Field& field); //!< Clear field and set right format (rows, columns)
   void MakeClick(const QPoint& point, bool left_button);
-  void GetField(Field& field
+  void GetField(const QPixmap& shot
+    , Field& field
     , bool& game_over
-    , bool& error_screen_absent
     , bool& error_field_undetected
     , bool& error_unknown_images);
   void MakeCellClick(unsigned int row, unsigned int col, bool left_button);
+  bool GetSnapshot(QPixmap& shot);
 };
 
 #endif // SCREEN_H

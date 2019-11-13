@@ -106,11 +106,21 @@ class BotDialog : public QDialog
     size_t step_index_;
   };
 
+  struct StepWTimeout{
+    unsigned int row_;
+    unsigned int col_;
+    Classifier::StepAction step_;
+    std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> timeout_;
+  };
+
   const float kReceiveFieldTimeout = 0.5;
+  const float kAfterStepSleep = 0.2;
+  const std::chrono::milliseconds kStepTimeout = std::chrono::milliseconds(2000);
   const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;
   const char kClosedCellSymbol = '.';
+  const char kOutFieldCellSymbol = ' ';
   const char kMineMarkSymbol = '*';
   const char kWrongMineSymbol = '-';
   const int kUpdateTimerInterval = 800;
@@ -182,6 +192,7 @@ class BotDialog : public QDialog
   void StopGame();
   void RestartGame();
   void SaveStep(StepTypeForSave step_type, const StepInfo& info);
+  void SaveRowColAsJson(std::ofstream& stream, unsigned int row, unsigned int col);
   void SaveWrongMine(unsigned int row, unsigned int col);
   void StartPointing(PointingTarget target);
   void Gaming(); // Thread for gaming procedure
@@ -192,6 +203,9 @@ class BotDialog : public QDialog
   void UpdateGamingByLevel(); // Update gaming parameters (rows, columns, mines) by level information
   void SetLevelButtonsStates();
   bool FieldHasWrongMine(const Field& field, unsigned int& row, unsigned int& col);
+  bool WaitActionAndProceed(); //!< Waiting for user action or exit. Return the flag to proceeding
+  bool CheckProceed(); //!< Check if gaming cycle can be proceeded
+  void UseCacheOnField(Field& field, std::vector<StepWTimeout>& cache); //!< Use cached step on field, clear old steps
 
  private slots:
   void PointingTick();
