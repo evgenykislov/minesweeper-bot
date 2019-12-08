@@ -75,5 +75,9 @@ INCLUDEPATH += $$PWD
 unix:!macx: DEPENDPATH += /usr/local/include
 win32: DEPENDPATH += $$PWD/../win32/include
 
-win32: PRE_TARGETDEPS += $$PWD/../win32/lib/libuiohook.a
-win32: PRE_TARGETDEPS += $$PWD/../win32/lib/libfakeInput.a
+win32: PRE_TARGETDEPS += $$PWD/../win32/lib/uiohook.lib
+win32: PRE_TARGETDEPS += $$PWD/../win32/lib/fakeInput.lib
+
+win32 {
+  LIBS += -luser32
+}

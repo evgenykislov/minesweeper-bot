@@ -441,7 +441,6 @@ void BotDialog::Gaming() {
       // Get field
       LOG(INFO) << "Get field";
       scr_.GetStableField(field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
-      UseCacheOnField(field, step_cache);
       if (error_no_field || error_unknown_images) {
         LOG(INFO) << "Game stopped by reason";
         emit DoGameStopped(false, error_no_field, error_unknown_images); // TODO remove first argument
@@ -464,6 +463,7 @@ void BotDialog::Gaming() {
         emit DoGameOver();
         break;
       }
+      UseCacheOnField(field, step_cache);
       // Check game completed
       unsigned int closed_cells_amount = 0;
       unsigned int mark_mines_amount = 0;
@@ -521,18 +521,17 @@ void BotDialog::Gaming() {
       tostep.row_ = row;
       tostep.col_ = col;
       tostep.step_ = step;
-      tostep.timeout_ = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now()) + kStepTimeout;
       step_cache.push_back(tostep);
       LOG(INFO) << "Made step";
       // Wait for update complete
       Field next_field;
       scr_.GetStableField(next_field, kReceiveFieldTimeout, game_over, error_no_field, error_unknown_images, error_timeout);
-      UseCacheOnField(next_field, step_cache);
       // Detect success
       if (error_no_field || error_unknown_images) {
         emit DoGameStopped(false, error_no_field, error_unknown_images);
         break;
       }
+      UseCacheOnField(next_field, step_cache);
       LOG(INFO) << "Got changed screen x0d";
       step_info.field_ = field;
       step_info.row_ = row;
@@ -718,11 +717,13 @@ bool BotDialog::CheckProceed() {
 }
 
 void BotDialog::UseCacheOnField(Field& field, std::vector<StepWTimeout>& cache) {
-  auto current_time = chrono::time_point_cast<chrono::milliseconds>(chrono::steady_clock::now());
-  remove_if(cache.begin(), cache.end(), [current_time](const StepWTimeout& value){
-    return value.timeout_ < current_time;
-  });
   for (auto iter = cache.begin(); iter != cache.end();) {
+    if (iter->row_ >= field.size()) {
+      continue;
+    }
+    if (iter->col_ >= field[iter->row_].size()) {
+      continue;
+    }
     auto& cell = field[iter->row_][iter->col_];
     if (cell == kClosedCellSymbol) {
       // Use information from cache

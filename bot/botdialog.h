@@ -110,12 +110,10 @@ class BotDialog : public QDialog
     unsigned int row_;
     unsigned int col_;
     Classifier::StepAction step_;
-    std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds> timeout_;
   };
 
   const float kReceiveFieldTimeout = 0.5;
-  const float kAfterStepSleep = 0.2;
-  const std::chrono::milliseconds kStepTimeout = std::chrono::milliseconds(2000);
+  const float kAfterStepSleep = 0.2f;
   const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;
