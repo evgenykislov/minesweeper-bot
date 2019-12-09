@@ -112,8 +112,9 @@ class BotDialog : public QDialog
     Classifier::StepAction step_;
   };
 
-  const float kReceiveFieldTimeout = 0.5;
-  const float kAfterStepSleep = 0.2f;
+  const float kReceiveFieldTimeout = 0.1f;
+
+  const float kAfterStepSleep = 0.1f;
   const int64_t kMouseIdleInterval = 3000; // 3 seconds of mouse idle before automatic gaming
   const std::chrono::milliseconds kMouseIdleRecheckInterval = std::chrono::milliseconds(200);
   const int64_t kWaitMouseProcessing = 100;
